@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.project.evaluation.mapper.RuleMapper">
+    <select id="paginationQuery" resultType="com.project.evaluation.entity.Rule">
+        SELECT * FROM `evaluation-period`
+        <where>
+            <if test="periodId != null and periodId != ''">
+                period_id = #{periodId}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </select>
+</mapper>
