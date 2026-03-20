@@ -10,7 +10,7 @@ spring:
       max-request-size: 10MB
   data:
     redis:
-      host: 192.168.186.128
+      host: 172.30.110.23
       port: 6379
       password: 123456
       database: 0
