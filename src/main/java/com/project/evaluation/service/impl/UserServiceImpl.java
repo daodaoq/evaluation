@@ -1,9 +1,12 @@
 package com.project.evaluation.service.impl;
 
+import com.project.evaluation.entity.Authority;
 import com.project.evaluation.entity.MyUserDetails;
 import com.project.evaluation.entity.Result;
+import com.project.evaluation.mapper.AuthorityMapper;
 import com.project.evaluation.service.UserService;
 import com.project.evaluation.utils.JwtUtil;
+import com.project.evaluation.utils.SecurityContextUtil;
 import com.project.evaluation.vo.User.LoginReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -14,6 +17,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -24,6 +28,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired
+    private AuthorityMapper authorityMapper;
 
     /**
      * 用户登录
@@ -79,5 +86,16 @@ public class UserServiceImpl implements UserService {
         SecurityContextHolder.clearContext();
         // 返回数据
         return Result.success("登出成功");
+    }
+
+    /**
+     * 获取用户权限
+     * @return
+     */
+    @Override
+    public Result<List<Authority>> getUserAuthority() {
+        Integer userId = SecurityContextUtil.getCurrentUserId();
+        List<Authority> authorities = authorityMapper.selectAllAuthorityDetailsByUserId(userId);
+        return Result.success(authorities);
     }
 }
