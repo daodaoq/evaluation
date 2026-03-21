@@ -23,12 +23,13 @@ public class CollegeServiceImpl implements CollegeService {
 
     /**
      * 通过学院名称查找学院
+     *
      * @param collegeName
      * @return
      */
     @Override
     public College findCollegeByName(String collegeName) {
-        if(!StringUtils.hasText(collegeName)){
+        if (!StringUtils.hasText(collegeName)) {
             throw new IllegalArgumentException("学院名称不能为空");
         }
         return collegeMapper.findCollegeByName(collegeName.trim());
@@ -36,40 +37,43 @@ public class CollegeServiceImpl implements CollegeService {
 
     /**
      * 添加学院
+     *
      * @param addCollegeReq
      */
     @Override
     public void addCollege(AddCollegeReq addCollegeReq) {
         collegeMapper.addCollege(addCollegeReq);
-        log.info("添加成功；{}",addCollegeReq);
+        log.info("添加成功；{}", addCollegeReq);
     }
 
     /**
      * 删除学院
+     *
      * @param id
      */
     @Override
     public void deleteCollege(Integer id) {
-        if(id==null||id<=0){
+        if (id == null || id <= 0) {
             throw new IllegalArgumentException("非法学院ID");
         }
-        int rows=collegeMapper.deleteCollege(id);
-        if(rows==0){
-            log.warn("删除失败，学院id不存在：{}",id);
+        int rows = collegeMapper.deleteCollege(id);
+        if (rows == 0) {
+            log.warn("删除失败，学院id不存在：{}", id);
             throw new IllegalStateException("学院不存在或已删除");
         }
-        log.info("删除学院成功：id={}",id);
+        log.info("删除学院成功：id={}", id);
 
     }
 
     /**
      * 通过id查找学院
+     *
      * @param id
      * @return
      */
     @Override
     public College findCollegeById(Integer id) {
-        if(id<=0||id==null){
+        if (id <= 0 || id == null) {
             throw new IllegalArgumentException("非法学院ID");
         }
         return collegeMapper.findCollegeById(id);
@@ -77,16 +81,18 @@ public class CollegeServiceImpl implements CollegeService {
 
     /**
      * 更新学院信息
+     *
      * @param id
      * @param updateCollegeReq
      */
     @Override
     public void updateCollege(Integer id, UpdateCollegeReq updateCollegeReq) {
-    collegeMapper.updateCollege(id,updateCollegeReq);
+        collegeMapper.updateCollege(id, updateCollegeReq);
     }
 
     /**
      * 批量获取学院
+     *
      * @return
      */
     @Override
@@ -96,6 +102,7 @@ public class CollegeServiceImpl implements CollegeService {
 
     /**
      * 分页条件查询学院
+     *
      * @param pageNum
      * @param pageSize
      * @param status
@@ -103,10 +110,10 @@ public class CollegeServiceImpl implements CollegeService {
      */
     @Override
     public PageBean<College> paginationQuery(Integer pageNum, Integer pageSize, Integer status) {
-        PageBean<College>pb=new PageBean<>();
-        PageHelper.startPage(pageNum,pageSize);
-        List<College>colleges=collegeMapper.paginationQuery(status);
-        Page<College> u=(Page<College>)colleges;
+        PageBean<College> pb = new PageBean<>();
+        PageHelper.startPage(pageNum, pageSize);
+        List<College> colleges = collegeMapper.paginationQuery(status);
+        Page<College> u = (Page<College>) colleges;
         pb.setTotal(u.getTotal());
         pb.setItems(u.getResult());
         return pb;

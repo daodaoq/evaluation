@@ -20,4 +20,21 @@
                 -- 去重（避免重复权限）
         GROUP BY p.id;
     </select>
+
+    <select id="selectAllAuthorityDetailsByUserId" resultType="com.project.evaluation.entity.Authority">
+        SELECT
+            p.*
+        FROM sys_user u
+                 -- 关联用户-角色表
+                 LEFT JOIN sys_user_role ur ON u.id = ur.user_id
+            -- 关联角色-权限表
+                 LEFT JOIN sys_role_permission rp ON ur.role_id = rp.role_id
+            -- 关联权限表
+                 LEFT JOIN sys_permission p ON rp.perm_id = p.id
+        -- 筛选条件：指定用户ID + 权限启用
+        WHERE u.id = #{userid}
+          AND p.status = 1
+        -- 去重（避免重复权限）
+        GROUP BY p.id;
+    </select>
 </mapper>

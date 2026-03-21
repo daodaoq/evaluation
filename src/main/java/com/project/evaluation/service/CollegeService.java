@@ -10,10 +10,16 @@ import java.util.List;
 @Service
 public interface CollegeService {
     College findCollegeByName(String collegeName);
+
     void addCollege(AddCollegeReq addCollegeReq);
+
     void deleteCollege(Integer id);
+
     College findCollegeById(Integer id);
+
     void updateCollege(Integer id, UpdateCollegeReq updateCollegeReq);
-    List<College>collegeList();
-    PageBean<College> paginationQuery(Integer pageNum,Integer pageSize,Integer status);
+
+    List<College> collegeList();
+
+    PageBean<College> paginationQuery(Integer pageNum, Integer pageSize, Integer status);
 }
