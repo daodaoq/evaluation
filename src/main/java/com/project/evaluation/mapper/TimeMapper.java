@@ -19,7 +19,7 @@ public interface TimeMapper {
      * 添加
      * @param addTimeReq
      */
-    @Insert("INSERT INTO `evaluation-period`" +
+    @Insert("INSERT INTO `evaluation_period`" +
             "(period_name, start_time, end_time, status, create_time, update_time)"+
     "VALUES(#{periodName}, #{startTime}, #{endTime}, #{status}, NOW(), NOW())")
     void addTime(AddTimeReq addTimeReq);
@@ -28,14 +28,14 @@ public interface TimeMapper {
      * 删除周期
      * @param id
      */
-    @Delete("DELETE FROM `evaluation-period` WHERE id = #{id}")
+    @Delete("DELETE FROM `evaluation_period` WHERE id = #{id}")
     int deleteTime(Integer id);
 
     /**
      * 更新周期信息
      * @param updateTimeReq
      */
-    @Update("UPDATE `evaluation-period` SET "+
+    @Update("UPDATE `evaluation_period` SET "+
             "period_name = #{updateTimeReq.periodName},"+
             "start_time = #{updateTimeReq.startTime},"+
             "end_time = #{updateTimeReq.endTime},"+
@@ -48,7 +48,7 @@ public interface TimeMapper {
      * @param name
      * @rerurn
      */
-    @Select("SELECT * FROM `evaluation-period` WHERE period_name = #{name}")
+    @Select("SELECT * FROM `evaluation_period` WHERE period_name = #{name}")
     Time findTimeByName(String name);
 
     /**
@@ -56,14 +56,14 @@ public interface TimeMapper {
      * @param id
      * @return
      */
-    @Select("SELECT * FROM `evaluation-period` WHERE id = #{id}")
+    @Select("SELECT * FROM `evaluation_period` WHERE id = #{id}")
     Time findTimeById(Integer id);
 
     /**
      * 批量获取周期列表
      * @return
      */
-    @Select("SELECT * FROM `evaluation-period`")
+    @Select("SELECT * FROM `evaluation_period`")
     List<Time> timeList();
 
     /**

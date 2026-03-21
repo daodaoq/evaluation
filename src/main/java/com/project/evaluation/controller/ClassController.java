@@ -100,10 +100,4 @@ public class ClassController {
         PageBean<Class>pb=classService.paginationQuery(pageNum,pageSize,collegedId,gradeYear);
         return Result.success(pb);
     }
-
-
-
-
-
-
 }
