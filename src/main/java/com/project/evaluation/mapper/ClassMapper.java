@@ -29,7 +29,7 @@ public interface ClassMapper {
     @Delete("DELETE FROM `sys_class` WHERE id=#{id}")
     int deleteClass(Integer id);
 
-    @Update("UPDATE `sys_class` SET" +
+    @Update("UPDATE `sys_class` SET " +
             "class_name=#{updateClassReq.className}," +
             "college_id=#{updateClassReq.collegeId}" +
             "grade_year=#{updateClassReq.gradeYear}," +
@@ -59,7 +59,7 @@ public interface ClassMapper {
      *
      * @return
      */
-    @Select("SELECT * FROM`sys_class`")
+    @Select("SELECT * FROM `sys_class`")
     List<Class> classList();
 
     /**

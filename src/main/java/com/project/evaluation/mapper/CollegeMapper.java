@@ -25,7 +25,7 @@ public interface CollegeMapper {
      * @param id
      * @return
      */
-    @Delete("DELETE FROM `sys_college` WHRER id = #{id}")
+    @Delete("DELETE FROM `sys_college` WHERE id=#{id}")
     int deleteCollege(Integer id);
 
     /**
@@ -34,7 +34,7 @@ public interface CollegeMapper {
      * @param id
      * @param updateCollegeReq
      */
-    @Update("UPDATE `sys_college` SET" +
+    @Update("UPDATE `sys_college` SET " +
             "college_name = #{updateCollegeReq.collegeName}," +
             "status = #{updateCollegeReq.status}," +
             "update_time = NOW() WHERE id = #{id}")
@@ -46,7 +46,7 @@ public interface CollegeMapper {
      * @param name
      * @return
      */
-    @Select("SELECT *FROM `sys_college` WHERE college_name = #{name}")
+    @Select("SELECT * FROM  `sys_college` WHERE college_name = #{name}")
     College findCollegeByName(String name);
 
     /**
@@ -72,6 +72,5 @@ public interface CollegeMapper {
      * @param status
      * @return
      */
-    @Select("SELECT * FROM `sys_college` WHERE status=#{status}")
     List<College> paginationQuery(Integer status);
 }

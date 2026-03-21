@@ -60,7 +60,7 @@ public class ClassController {
      * @param id
      * @return
      */
-    @PutMapping
+    @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:class:menu')")
     @CrossOrigin
     public Result updateClass(@RequestBody UpdateClassReq updateClassReq, @PathVariable("id") Integer id) {
@@ -92,7 +92,7 @@ public class ClassController {
      * @param id
      * @return
      */
-    @GetMapping
+    @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:class:menu')")
     @CrossOrigin
     public Result<Class> findClassById(@PathVariable("id") Integer id) {
@@ -100,6 +100,9 @@ public class ClassController {
         return Result.success(clazz);
     }
 
+    @GetMapping("/list")
+    @PreAuthorize("hasAuthority('sys:college:menu')")
+    @CrossOrigin
     public Result<PageBean<Class>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
