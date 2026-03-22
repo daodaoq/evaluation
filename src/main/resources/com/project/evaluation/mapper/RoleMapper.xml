@@ -6,11 +6,23 @@
     <select id="paginationQuery" resultType="com.project.evaluation.entity.Role">
         SELECT * FROM `sys_role`
         <where>
-
             <if test="status != null">
                 AND status = #{status}
             </if>
         </where>
         ORDER BY create_time DESC
+    </select>
+
+    <delete id="deleteRolePermissions">
+        DELETE FROM `sys_role_permission` WHERE role_id = #{roleId}
+    </delete>
+
+    <insert id="addRolePermission">
+        INSERT INTO `sys_role_permission` (role_id, perm_id, create_time, update_time)
+        VALUES (#{roleId}, #{permId}, NOW(), NOW())
+    </insert>
+
+    <select id="getRolePermissions" resultType="java.lang.Integer">
+        SELECT perm_id FROM `sys_role_permission` WHERE role_id = #{roleId}
     </select>
 </mapper>

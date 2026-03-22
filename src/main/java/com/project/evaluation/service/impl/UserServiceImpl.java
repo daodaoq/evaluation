@@ -4,10 +4,12 @@ import com.project.evaluation.entity.Authority;
 import com.project.evaluation.entity.MyUserDetails;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.mapper.AuthorityMapper;
+import com.project.evaluation.mapper.UserMapper;
 import com.project.evaluation.service.UserService;
 import com.project.evaluation.utils.JwtUtil;
 import com.project.evaluation.utils.SecurityContextUtil;
 import com.project.evaluation.vo.User.LoginReq;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
 public class UserServiceImpl implements UserService {
 
     @Autowired
@@ -31,6 +34,9 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private AuthorityMapper authorityMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     /**
      * 用户登录
@@ -97,5 +103,32 @@ public class UserServiceImpl implements UserService {
         Integer userId = SecurityContextUtil.getCurrentUserId();
         List<Authority> authorities = authorityMapper.selectAllAuthorityDetailsByUserId(userId);
         return Result.success(authorities);
+    }
+
+    @Override
+    public void assignRoles(Integer userId, List<Integer> roleIds) {
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("非法用户ID");
+        }
+        
+        // 先删除用户的所有角色
+        userMapper.deleteUserRoles(userId);
+        
+        // 再添加新的角色
+        if (roleIds != null && !roleIds.isEmpty()) {
+            for (Integer roleId : roleIds) {
+                userMapper.addUserRole(userId, roleId);
+            }
+        }
+        
+        log.info("用户角色分配成功：userId={}, roleIds={}", userId, roleIds);
+    }
+
+    @Override
+    public List<Integer> getUserRoles(Integer userId) {
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("非法用户ID");
+        }
+        return userMapper.getUserRoles(userId);
     }
 }

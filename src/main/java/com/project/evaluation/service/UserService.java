@@ -12,4 +12,8 @@ public interface UserService {
     Result logout();
 
     Result<List<Authority>> getUserAuthority();
+
+    void assignRoles(Integer userId, List<Integer> roleIds);
+
+    List<Integer> getUserRoles(Integer userId);
 }

@@ -4,6 +4,7 @@ import com.project.evaluation.entity.Role;
 import com.project.evaluation.vo.Role.AddRoleReq;
 import com.project.evaluation.vo.Role.UpdateRoleReq;
 import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
@@ -13,63 +14,93 @@ import java.util.List;
 @Mapper
 public interface RoleMapper {
 
-    /**
-     * 添加角色
-     * @param addRoleReq
-     */
-    @Insert("INSERT INTO `sys_role`" +
-            "(role_name, role_code, description, status, create_time, update_time)" +
-            "VALUES(#{roleName}, #{roleCode}, #{description}, #{status}, NOW(), NOW())")
-    void addRole(AddRoleReq addRoleReq);
+        /**
+         * 添加角色
+         * 
+         * @param addRoleReq
+         */
+        @Insert("INSERT INTO `sys_role`" +
+                        "(role_name, role_code, description, status, create_time, update_time)" +
+                        "VALUES(#{roleName}, #{roleCode}, #{description}, #{status}, NOW(), NOW())")
+        void addRole(AddRoleReq addRoleReq);
 
-    /**
-     * 删除角色
-     * @param id
-     * @return
-     */
-    @Delete("DELETE FROM `sys_role` WHERE id = #{id}")
-    int deleteRole(Integer id);
+        /**
+         * 删除角色
+         * 
+         * @param id
+         * @return
+         */
+        @Delete("DELETE FROM `sys_role` WHERE id = #{id}")
+        int deleteRole(Integer id);
 
-    /**
-     * 更新角色
-     * @param id
-     * @param updateRoleReq
-     */
-    @Update("UPDATE `sys_role` SET " +
-            "role_name = #{updateRoleReq.roleName}," +
-            "role_code = #{updateRoleReq.roleCode}," +
-            "description = #{updateRoleReq.description}," +
-            "status = #{updateRoleReq.status}," +
-            "update_time = NOW() WHERE id = #{id}")
-    void updateRole(Integer id, UpdateRoleReq updateRoleReq);
+        /**
+         * 更新角色
+         * 
+         * @param id
+         * @param updateRoleReq
+         */
+        @Update("UPDATE `sys_role` SET " +
+                        "role_name = #{updateRoleReq.roleName}," +
+                        "role_code = #{updateRoleReq.roleCode}," +
+                        "description = #{updateRoleReq.description}," +
+                        "status = #{updateRoleReq.status}," +
+                        "update_time = NOW() WHERE id = #{id}")
+        void updateRole(Integer id, UpdateRoleReq updateRoleReq);
 
-    /**
-     * 通过名字查找角色
-     * @param name
-     * @return
-     */
-    @Select("SELECT * FROM `sys_role` WHERE role_name = #{name}")
-    Role findRoleByName(String name);
+        /**
+         * 通过名字查找角色
+         * 
+         * @param name
+         * @return
+         */
+        @Select("SELECT * FROM `sys_role` WHERE role_name = #{name}")
+        Role findRoleByName(String name);
 
-    /**
-     * 通过id查找角色
-     * @param id
-     * @return
-     */
-    @Select("SELECT * FROM `sys_role` WHERE id = #{id}")
-    Role findRoleById(Integer id);
+        /**
+         * 通过id查找角色
+         * 
+         * @param id
+         * @return
+         */
+        @Select("SELECT * FROM `sys_role` WHERE id = #{id}")
+        Role findRoleById(Integer id);
 
-    /**
-     * 批量获取角色列表
-     * @return
-     */
-    @Select("SELECT * FROM `sys_role`")
-    List<Role> roleList();
+        /**
+         * 批量获取角色列表
+         * 
+         * @return
+         */
+        @Select("SELECT * FROM `sys_role`")
+        List<Role> roleList();
 
-    /**
-     * 分页条件查询角色
-     * @param status
-     * @return
-     */
-    List<Role> paginationQuery(Integer status);
+        /**
+         * 分页条件查询角色
+         * 
+         * @param status
+         * @return
+         */
+        List<Role> paginationQuery(Integer status);
+
+        /**
+         * 删除角色的所有权限
+         * 
+         * @param roleId
+         */
+        void deleteRolePermissions(Integer roleId);
+
+        /**
+         * 为角色添加权限
+         * 
+         * @param roleId
+         * @param permId
+         */
+        void addRolePermission(@Param("roleId") Integer roleId, @Param("permId") Integer permId);
+
+        /**
+         * 获取角色的权限ID列表
+         * 
+         * @param roleId
+         * @return
+         */
+        List<Integer> getRolePermissions(Integer roleId);
 }

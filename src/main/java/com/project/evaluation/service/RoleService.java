@@ -9,10 +9,20 @@ import java.util.List;
 
 public interface RoleService {
     Role findRoleByName(String roleName);
+
     void addRole(AddRoleReq addRoleReq);
+
     void deleteRole(Integer id);
+
     Role findRoleById(Integer id);
+
     void updateRole(Integer id, UpdateRoleReq updateRoleReq);
+
     List<Role> roleList();
+
     PageBean<Role> paginationQuery(Integer pageNum, Integer pageSize, Integer status);
+
+    void assignPermissions(Integer roleId, List<Integer> permIds);
+
+    List<Integer> getRolePermissions(Integer roleId);
 }

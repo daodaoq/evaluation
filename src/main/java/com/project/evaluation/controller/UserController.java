@@ -3,8 +3,10 @@ package com.project.evaluation.controller;
 import com.project.evaluation.entity.Authority;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.UserService;
+import com.project.evaluation.vo.User.AssignRoleReq;
 import com.project.evaluation.vo.User.LoginReq;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -51,5 +53,31 @@ public class UserController {
     @CrossOrigin
     public Result<List<Authority>> getUserAuthority() {
         return userService.getUserAuthority();
+    }
+
+    /**
+     * 为用户分配角色
+     * @param assignRoleReq
+     * @return
+     */
+    @PostMapping("/assign-role")
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result assignRole(@RequestBody AssignRoleReq assignRoleReq){
+        userService.assignRoles(assignRoleReq.getUserId(), assignRoleReq.getRoleIds());
+        return Result.success();
+    }
+
+    /**
+     * 获取用户的角色列表
+     * @param userId
+     * @return
+     */
+    @GetMapping("/roles/{userId}")
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<List<Integer>> getUserRoles(@PathVariable("userId") Integer userId){
+        List<Integer> roleIds = userService.getUserRoles(userId);
+        return Result.success(roleIds);
     }
 }

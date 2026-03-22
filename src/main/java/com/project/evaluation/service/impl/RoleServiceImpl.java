@@ -111,4 +111,31 @@ public class RoleServiceImpl implements RoleService {
         pb.setItems(u.getResult());
         return pb;
     }
+
+    @Override
+    public void assignPermissions(Integer roleId, List<Integer> permIds) {
+        if (roleId == null || roleId <= 0) {
+            throw new IllegalArgumentException("非法角色ID");
+        }
+        
+        // 先删除角色的所有权限
+        roleMapper.deleteRolePermissions(roleId);
+        
+        // 再添加新的权限
+        if (permIds != null && !permIds.isEmpty()) {
+            for (Integer permId : permIds) {
+                roleMapper.addRolePermission(roleId, permId);
+            }
+        }
+        
+        log.info("角色权限分配成功：roleId={}, permIds={}", roleId, permIds);
+    }
+
+    @Override
+    public List<Integer> getRolePermissions(Integer roleId) {
+        if (roleId == null || roleId <= 0) {
+            throw new IllegalArgumentException("非法角色ID");
+        }
+        return roleMapper.getRolePermissions(roleId);
+    }
 }
