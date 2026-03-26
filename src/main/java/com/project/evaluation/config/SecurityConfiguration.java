@@ -64,7 +64,7 @@ public class SecurityConfiguration {
                         ResponseUtil.write(response, Result.error(accessDeniedException.getMessage()));
                     });
                 })
-                .addFilterBefore(sensitiveWordFilter, JwtAuthenticationFilter.class)
+                .addFilterBefore(sensitiveWordFilter, AuthorizationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class);
         return http.build();
     }
