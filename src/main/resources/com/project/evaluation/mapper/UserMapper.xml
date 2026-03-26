@@ -18,24 +18,32 @@
 
     <select id="selectUserPage" resultType="com.project.evaluation.vo.User.LoginUserVO">
         SELECT
-            id AS userId,
-            student_id AS userNo,
-            real_name AS userName,
-            college_id AS collegeId,
-            class_id AS classId,
-            status,
-            create_time AS createTime,
-            update_time AS updateTime
-        FROM sys_user
+            u.id AS userId,
+            u.student_id AS userNo,
+            u.real_name AS userName,
+            u.college_id AS collegeId,
+            c.college_name AS collegeName,
+            u.class_id AS classId,
+            u.status,
+            u.create_time AS createTime,
+            u.update_time AS updateTime
+        FROM sys_user u
+        LEFT JOIN sys_college c ON u.college_id = c.id
         <where>
             <if test="studentId != null and studentId != ''">
-                AND student_id LIKE CONCAT('%', #{studentId}, '%')
+                AND u.student_id LIKE CONCAT('%', #{studentId}, '%')
             </if>
             <if test="status != null">
-                AND status = #{status}
+                AND u.status = #{status}
             </if>
+            AND EXISTS (
+                SELECT 1
+                FROM sys_user_role ur
+                WHERE ur.user_id = u.id
+                  AND ur.role_id IN (2, 3)
+            )
         </where>
-        ORDER BY id DESC
+        ORDER BY u.id DESC
     </select>
 
     <select id="selectStudentPage" resultType="com.project.evaluation.vo.User.LoginUserVO">

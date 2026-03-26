@@ -4,6 +4,7 @@ import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.vo.User.LoginUserVO;
 import com.project.evaluation.vo.Student.AddStudentReq;
 import com.project.evaluation.vo.Student.UpdateStudentReq;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface StudentService {
 
@@ -14,4 +15,6 @@ public interface StudentService {
     void updateStudent(Integer id, UpdateStudentReq req);
 
     void deleteStudent(Integer id);
+
+    int importStudentsByExcel(MultipartFile file);
 }

@@ -17,3 +17,9 @@ spring:
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
+
+sensitive:
+  enabled: true
+  mask-char: "*"
+  words-file: classpath:sensitive-words.txt
+  words: []

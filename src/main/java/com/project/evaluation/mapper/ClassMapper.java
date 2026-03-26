@@ -45,6 +45,9 @@ public interface ClassMapper {
     @Select("SELECT * FROM `sys_class` WHERE class_name=#{name}")
     Class findClassByName(String name);
 
+    @Select("SELECT * FROM `sys_class` WHERE class_name=#{className} AND college_id=#{collegeId} LIMIT 1")
+    Class findByCollegeIdAndName(@Param("collegeId") Integer collegeId, @Param("className") String className);
+
     /**
      * 通过id查找班级
      *

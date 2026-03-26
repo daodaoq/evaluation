@@ -14,6 +14,7 @@ import com.project.evaluation.vo.Student.UpdateStudentReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -47,7 +48,7 @@ public class StudentController {
     @PostMapping
     @PreAuthorize("hasAuthority('sys:student:menu')")
     @CrossOrigin
-    public Result add(@RequestBody AddStudentReq req) {
+    public Result<?> add(@RequestBody AddStudentReq req) {
         try {
             studentService.addStudent(req);
             return Result.success();
@@ -59,7 +60,7 @@ public class StudentController {
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:student:menu')")
     @CrossOrigin
-    public Result update(@PathVariable Integer id, @RequestBody UpdateStudentReq req) {
+    public Result<?> update(@PathVariable Integer id, @RequestBody UpdateStudentReq req) {
         try {
             studentService.updateStudent(id, req);
             return Result.success();
@@ -71,10 +72,25 @@ public class StudentController {
     @DeleteMapping
     @PreAuthorize("hasAuthority('sys:student:menu')")
     @CrossOrigin
-    public Result delete(@RequestBody DeleteStudentReq req) {
+    public Result<?> delete(@RequestBody DeleteStudentReq req) {
         try {
             studentService.deleteStudent(req.getId());
             return Result.success();
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * Excel 批量导入学生（必填列：学号、姓名、学院、班级）
+     */
+    @PostMapping("/import-excel")
+    @PreAuthorize("hasAuthority('sys:student:menu')")
+    @CrossOrigin
+    public Result<?> importExcel(@RequestParam("file") MultipartFile file) {
+        try {
+            int cnt = studentService.importStudentsByExcel(file);
+            return Result.success("导入成功，共 " + cnt + " 条");
         } catch (IllegalArgumentException e) {
             return Result.error(e.getMessage());
         }

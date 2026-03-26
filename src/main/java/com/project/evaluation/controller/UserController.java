@@ -5,12 +5,14 @@ import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.UserService;
 import com.project.evaluation.vo.User.AssignRoleReq;
+import com.project.evaluation.vo.User.BatchAssignRoleReq;
 import com.project.evaluation.vo.User.LoginReq;
 import com.project.evaluation.vo.User.LoginResp;
 import com.project.evaluation.vo.User.LoginUserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -83,6 +85,36 @@ public class UserController {
     public Result assignRole(@RequestBody AssignRoleReq assignRoleReq){
         userService.assignRoles(assignRoleReq.getUserId(), assignRoleReq.getRoleIds());
         return Result.success();
+    }
+
+    /**
+     * Excel 批量导入教师（必填列：工号、真实姓名、学院）
+     */
+    @PostMapping("/import-teacher-excel")
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<?> importTeacherExcel(@RequestParam("file") MultipartFile file) {
+        try {
+            int cnt = userService.importTeachersByExcel(file);
+            return Result.success("导入成功，共 " + cnt + " 条");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 批量给多个用户赋同一个角色（追加，不清空原有角色）
+     */
+    @PostMapping("/batch-assign-role")
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<?> batchAssignRole(@RequestBody BatchAssignRoleReq req) {
+        try {
+            int cnt = userService.batchAssignSameRole(req.getUserIds(), req.getRoleId());
+            return Result.success("批量赋角色成功，更新 " + cnt + " 个用户");
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
     }
 
     /**

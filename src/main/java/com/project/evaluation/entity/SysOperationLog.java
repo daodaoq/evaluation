@@ -15,6 +15,10 @@ import java.time.LocalDateTime;
 public class SysOperationLog {
     private Long id;
     private Long userId;
+    /** 关联 sys_user.student_id（查询联表填充） */
+    private String studentId;
+    /** 关联 sys_user.real_name（查询联表填充） */
+    private String realName;
     private String operation;
     private String content;
     private String ipAddress;

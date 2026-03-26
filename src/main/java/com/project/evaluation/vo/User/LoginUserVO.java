@@ -20,6 +20,8 @@ public class LoginUserVO {
     /** 真实姓名，对应 real_name */
     private String userName;
     private Long collegeId;
+    /** 学院名称（列表联表展示） */
+    private String collegeName;
     private Long classId;
     private Integer status;
     private LocalDateTime createTime;

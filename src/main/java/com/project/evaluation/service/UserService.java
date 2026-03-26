@@ -7,6 +7,7 @@ import com.project.evaluation.entity.SysPermission;
 import com.project.evaluation.vo.User.LoginReq;
 import com.project.evaluation.vo.User.LoginResp;
 import com.project.evaluation.vo.User.LoginUserVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -30,4 +31,8 @@ public interface UserService {
     void assignRoles(Integer userId, List<Integer> roleIds);
 
     List<Integer> getUserRoles(Integer userId);
+
+    int importTeachersByExcel(MultipartFile file);
+
+    int batchAssignSameRole(List<Integer> userIds, Integer roleId);
 }

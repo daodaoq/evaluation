@@ -20,24 +20,29 @@ public interface SysOperationLogMapper {
     @Select("""
         <script>
         SELECT
-          id,
-          user_id AS userId,
-          operation,
-          content,
-          ip_address AS ipAddress,
-          create_time AS createTime
-        FROM sys_operation_log
+          l.id,
+          l.user_id AS userId,
+          u.student_id AS studentId,
+          u.real_name AS realName,
+          l.operation,
+          l.content,
+          l.ip_address AS ipAddress,
+          l.create_time AS createTime
+        FROM sys_operation_log l
+        LEFT JOIN sys_user u ON l.user_id = u.id
         <where>
-          <if test="userId != null">AND user_id = #{userId}</if>
+          <if test="userId != null">AND l.user_id = #{userId}</if>
           <if test="keyword != null and keyword != ''">
             AND (
-              operation LIKE CONCAT('%', #{keyword}, '%')
-              OR content LIKE CONCAT('%', #{keyword}, '%')
-              OR ip_address LIKE CONCAT('%', #{keyword}, '%')
+              l.operation LIKE CONCAT('%', #{keyword}, '%')
+              OR l.content LIKE CONCAT('%', #{keyword}, '%')
+              OR l.ip_address LIKE CONCAT('%', #{keyword}, '%')
+              OR u.student_id LIKE CONCAT('%', #{keyword}, '%')
+              OR u.real_name LIKE CONCAT('%', #{keyword}, '%')
             )
           </if>
         </where>
-        ORDER BY id DESC
+        ORDER BY l.id DESC
         </script>
         """)
     java.util.List<com.project.evaluation.entity.SysOperationLog> selectOperationLogPage(

@@ -2,6 +2,7 @@ package com.project.evaluation.config;
 
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.filter.JwtAuthenticationFilter;
+import com.project.evaluation.filter.SensitiveWordFilter;
 import com.project.evaluation.utils.ResponseUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +31,9 @@ public class SecurityConfiguration {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Autowired
+    private SensitiveWordFilter sensitiveWordFilter;
 
     @Bean
     public AuthenticationManager authenticationManager() {
@@ -60,6 +64,7 @@ public class SecurityConfiguration {
                         ResponseUtil.write(response, Result.error(accessDeniedException.getMessage()));
                     });
                 })
+                .addFilterBefore(sensitiveWordFilter, JwtAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class);
         return http.build();
     }

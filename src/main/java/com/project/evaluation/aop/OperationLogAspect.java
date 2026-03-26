@@ -5,6 +5,7 @@ import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.SysOperationLogService;
 import com.project.evaluation.utils.SecurityContextUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -15,6 +16,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 @Aspect
 @Component
@@ -52,7 +59,7 @@ public class OperationLogAspect {
         }
 
         String operation = operationFromRequest(request, pjp);
-        String content = buildContent(pjp.getArgs());
+        String content = buildContent(request, pjp.getArgs());
         String ipAddress = resolveIp(request);
 
         try {
@@ -84,39 +91,145 @@ public class OperationLogAspect {
     }
 
     private String resolveIp(HttpServletRequest request) {
-        String ip = request.getHeader("X-Forwarded-For");
-        if (StringUtils.hasText(ip)) {
-            // 可能形如：ip1, ip2
-            String[] parts = ip.split(",");
-            if (parts.length > 0 && StringUtils.hasText(parts[0])) return parts[0].trim();
-        }
-        return request.getRemoteAddr();
+        String ip = firstValidIp(
+                request.getHeader("X-Forwarded-For"),
+                request.getHeader("X-Real-IP"),
+                request.getHeader("Proxy-Client-IP"),
+                request.getHeader("WL-Proxy-Client-IP"),
+                request.getRemoteAddr()
+        );
+        return normalizeIp(ip);
     }
 
-    private String buildContent(Object[] args) {
-        String content;
-        try {
-            content = JSON.toJSONString(args);
-        } catch (Exception e) {
-            content = "args_serialization_failed";
+    private String firstValidIp(String... candidates) {
+        if (candidates == null) return "";
+        for (String c : candidates) {
+            if (!StringUtils.hasText(c)) continue;
+            // X-Forwarded-For 可能是逗号分隔，取第一个非 unknown
+            for (String part : c.split(",")) {
+                String ip = part.trim();
+                if (!StringUtils.hasText(ip)) continue;
+                if ("unknown".equalsIgnoreCase(ip)) continue;
+                return ip;
+            }
         }
-        content = maskSensitive(content);
-        if (content == null) content = "";
-        content = content.trim();
+        return "";
+    }
+
+    private String normalizeIp(String ip) {
+        if (!StringUtils.hasText(ip)) return ip;
+        String v = ip.trim();
+        if ("::1".equals(v) || "0:0:0:0:0:0:0:1".equals(v)) return "127.0.0.1";
+
+        // 去除 IPv6 映射前缀，如 ::ffff:127.0.0.1
+        if (v.startsWith("::ffff:")) {
+            v = v.substring("::ffff:".length());
+        }
+        try {
+            InetAddress addr = InetAddress.getByName(v);
+            if (addr.isLoopbackAddress()) return "127.0.0.1";
+            return addr.getHostAddress();
+        } catch (Exception e) {
+            // 解析失败保留原值
+            return v;
+        }
+    }
+
+    private String buildContent(HttpServletRequest request, Object[] args) {
+        String action = actionByMethod(request.getMethod());
+        String resource = resourceByUri(request.getRequestURI());
+        List<String> kv = extractImportantArgs(args);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(action).append(resource);
+        if (!kv.isEmpty()) {
+            sb.append("：").append(String.join("，", kv));
+        }
+        String content = sb.toString();
         return content.length() > 500 ? content.substring(0, 497) + "..." : content;
     }
 
-    /**
-     * 简单脱敏：对 JSON 字符串中常见密码字段进行替换。
-     */
-    private String maskSensitive(String json) {
-        if (!StringUtils.hasText(json)) return json;
+    private String actionByMethod(String method) {
+        if ("POST".equalsIgnoreCase(method)) return "新增";
+        if ("PUT".equalsIgnoreCase(method)) return "更新";
+        if ("DELETE".equalsIgnoreCase(method)) return "删除";
+        return "操作";
+    }
 
-        // 覆盖常见字段：password / pwd / new_pwd / old_pwd / re_pwd
-        json = json.replaceAll("(?i)\"(password|pwd|new_pwd|old_pwd|re_pwd)\"\\s*:\\s*\"[^\"]*\"", "\"$1\":\"***\"");
-        // 如果后端 DTO 某些字段不是字符串（例如 number/bool），仍尽量脱敏
-        json = json.replaceAll("(?i)\"(password|pwd|new_pwd|old_pwd|re_pwd)\"\\s*:\\s*[^,}\\]]+", "\"$1\":\"***\"");
-        return json;
+    private String resourceByUri(String uri) {
+        if (!StringUtils.hasText(uri)) return "数据";
+        if (uri.contains("/sys-student")) return "学生";
+        if (uri.contains("/sys-class")) return "班级";
+        if (uri.contains("/sys-college")) return "学院";
+        if (uri.contains("/evaluation-rule")) return "规则总览";
+        if (uri.contains("/ruleCategory-categories")) return "规则分类";
+        if (uri.contains("/rule-items")) return "规则项";
+        if (uri.contains("/sys-role")) return "角色";
+        if (uri.contains("/user")) return "用户";
+        return "数据";
+    }
+
+    private List<String> extractImportantArgs(Object[] args) {
+        List<String> out = new ArrayList<>();
+        if (args == null) return out;
+
+        for (Object arg : args) {
+            if (arg == null) continue;
+            if (arg instanceof HttpServletRequest || arg instanceof HttpServletResponse) continue;
+            if (arg instanceof org.springframework.validation.BindingResult) continue;
+
+            Class<?> c = arg.getClass();
+            if (isSimpleValue(c)) {
+                out.add(String.valueOf(arg));
+                continue;
+            }
+            for (Field f : c.getDeclaredFields()) {
+                if (Modifier.isStatic(f.getModifiers())) continue;
+                String name = f.getName();
+                if (!isImportantField(name)) continue;
+                f.setAccessible(true);
+                try {
+                    Object v = f.get(arg);
+                    if (v == null) continue;
+                    out.add(name + "=" + safeValue(name, v));
+                } catch (IllegalAccessException ignored) {
+                }
+            }
+        }
+        return out.size() > 8 ? out.subList(0, 8) : out;
+    }
+
+    private boolean isSimpleValue(Class<?> c) {
+        return c.isPrimitive()
+                || Number.class.isAssignableFrom(c)
+                || CharSequence.class.isAssignableFrom(c)
+                || Boolean.class.isAssignableFrom(c);
+    }
+
+    private boolean isImportantField(String name) {
+        if (!StringUtils.hasText(name)) return false;
+        String n = name.toLowerCase();
+        return n.endsWith("id")
+                || n.contains("name")
+                || n.contains("code")
+                || n.contains("status")
+                || n.contains("type")
+                || n.contains("score")
+                || n.contains("level")
+                || n.contains("student");
+    }
+
+    private String safeValue(String fieldName, Object v) {
+        String n = fieldName.toLowerCase();
+        if (n.contains("password") || n.contains("pwd")) return "***";
+        String s;
+        try {
+            s = JSON.toJSONString(v);
+        } catch (Exception e) {
+            s = String.valueOf(v);
+        }
+        s = s.replace("\"", "");
+        return s.length() > 40 ? s.substring(0, 37) + "..." : s;
     }
 }
 
