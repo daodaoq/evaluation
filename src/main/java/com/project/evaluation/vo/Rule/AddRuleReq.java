@@ -11,7 +11,7 @@ public class AddRuleReq {
     /**
      * 综测周期 id
      */
-    private String periodId;
+    private Integer periodId;
 
     /**
      * 规则总览名称

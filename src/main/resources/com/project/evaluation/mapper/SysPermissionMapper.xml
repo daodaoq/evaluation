@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.project.evaluation.mapper.SysPermissionMapper">
+
+    <select id="selectById" resultType="com.project.evaluation.entity.SysPermission">
+        SELECT id,
+               perm_name,
+               perm_code,
+               parent_id,
+               status,
+               create_time,
+               update_time
+        FROM sys_permission
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByUserId" resultType="com.project.evaluation.entity.SysPermission">
+        SELECT DISTINCT
+            p.id,
+            p.perm_name,
+            p.perm_code,
+            p.parent_id,
+            p.status,
+            p.create_time,
+            p.update_time
+        FROM sys_user u
+                 LEFT JOIN sys_user_role ur ON u.id = ur.user_id
+                 LEFT JOIN sys_role_permission rp ON ur.role_id = rp.role_id
+                 LEFT JOIN sys_permission p ON rp.perm_id = p.id
+        WHERE u.id = #{userId}
+          AND p.id IS NOT NULL
+          AND p.status = 1
+    </select>
+
+    <select id="selectAllEnabled" resultType="com.project.evaluation.entity.SysPermission">
+        SELECT
+            id,
+            perm_name,
+            perm_code,
+            parent_id,
+            status,
+            create_time,
+            update_time
+        FROM sys_permission
+        WHERE status = 1
+        ORDER BY parent_id ASC, id ASC
+    </select>
+
+    <select id="selectMenuPermsEnabled" resultType="com.project.evaluation.entity.SysPermission">
+        SELECT
+            id,
+            perm_name,
+            perm_code,
+            parent_id,
+            status,
+            create_time,
+            update_time
+        FROM sys_permission
+        WHERE status = 1
+          AND perm_code LIKE '%:menu'
+        ORDER BY parent_id ASC, id ASC
+    </select>
+</mapper>

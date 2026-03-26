@@ -101,15 +101,15 @@ public class ClassController {
     }
 
     @GetMapping("/list")
-    @PreAuthorize("hasAuthority('sys:college:menu')")
+    @PreAuthorize("hasAuthority('sys:class:menu')")
     @CrossOrigin
     public Result<PageBean<Class>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
-            @RequestParam(required = false) Integer collegedId,
+            @RequestParam(required = false) Integer collegeId,
             @RequestParam(required = false) Integer gradeYear
     ) {
-        PageBean<Class> pb = classService.paginationQuery(pageNum, pageSize, collegedId, gradeYear);
+        PageBean<Class> pb = classService.paginationQuery(pageNum, pageSize, collegeId, gradeYear);
         return Result.success(pb);
     }
 }

@@ -31,7 +31,7 @@ public interface ClassMapper {
 
     @Update("UPDATE `sys_class` SET " +
             "class_name=#{updateClassReq.className}," +
-            "college_id=#{updateClassReq.collegeId}" +
+            "college_id=#{updateClassReq.collegeId}," +
             "grade_year=#{updateClassReq.gradeYear}," +
             "update_time=NOW() WHERE id=#{id}")
     void updateClass(Integer id, UpdateClassReq updateClassReq);

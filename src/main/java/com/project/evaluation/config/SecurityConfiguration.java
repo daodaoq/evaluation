@@ -14,6 +14,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
@@ -25,6 +26,9 @@ public class SecurityConfiguration {
     private UserDetailsService userDetailsService;
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
@@ -33,6 +37,8 @@ public class SecurityConfiguration {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         // 配置基于数据库认证的 userDetailsService 对象
         provider.setUserDetailsService(userDetailsService);
+        // 确保使用与数据库密码格式一致的 PasswordEncoder
+        provider.setPasswordEncoder(passwordEncoder);
         // 创建并返回认证管理器对象(实现类 ProviderManager)
         return new ProviderManager(provider);
     }

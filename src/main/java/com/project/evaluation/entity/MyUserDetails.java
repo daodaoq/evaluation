@@ -56,6 +56,7 @@ public class MyUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        Integer st = myUser != null ? myUser.getStatus() : null;
+        return st != null && st == 1;
     }
 }

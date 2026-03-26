@@ -14,7 +14,7 @@ public interface RuleMapper {
      * 添加规则总览
      * @param addRuleReq
      */
-    @Insert("INSERT INTO `evaluation-rule`" +
+    @Insert("INSERT INTO `evaluation_rule`" +
             "(period_id, rule_name, version_code, status, create_time, update_time)"+
             "VALUES(#{periodId}, #{ruleName}, #{versionCode}, #{status}, NOW(), NOW())")
     void addRule(AddRuleReq addRuleReq);
@@ -23,15 +23,14 @@ public interface RuleMapper {
      * 删除规则总览
      * @param id
      */
-    @Delete("DELETE FROM `evaluation-rule` WHERE id = #{id}")
+    @Delete("DELETE FROM `evaluation_rule` WHERE id = #{id}")
     int deleteRule(Integer id);
 
     /**
      * 更新规则总览信息
      * @param updateRuleReq
      */
-    @Update("UPDATE `evaluation-rule` SET "+
-            "period_id = #{updateRuleReq.periodId},"+
+    @Update("UPDATE `evaluation_rule` SET "+
             "rule_name = #{updateRuleReq.ruleName},"+
             "version_code = #{updateRuleReq.versionCode},"+
             "status = #{updateRuleReq.status}," +
@@ -43,7 +42,7 @@ public interface RuleMapper {
      * @param name
      * @rerurn
      */
-    @Select("SELECT * FROM `evaluation-rule` WHERE rule_name = #{name}")
+    @Select("SELECT * FROM `evaluation_rule` WHERE rule_name = #{name}")
     Rule findRuleByName(String name);
 
     /**
@@ -51,14 +50,14 @@ public interface RuleMapper {
      * @param id
      * @return
      */
-    @Select("SELECT * FROM `evaluation-rule` WHERE id = #{id}")
+    @Select("SELECT * FROM `evaluation_rule` WHERE id = #{id}")
     Rule findRuleById(Integer id);
 
     /**
      * 批量获取规则总览列表
      * @return
      */
-    @Select("SELECT * FROM `evaluation-rule`")
+    @Select("SELECT * FROM `evaluation_rule`")
     List<Rule> ruleList();
 
     /**

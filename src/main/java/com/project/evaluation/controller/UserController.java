@@ -1,10 +1,13 @@
 package com.project.evaluation.controller;
 
 import com.project.evaluation.entity.Authority;
+import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.UserService;
 import com.project.evaluation.vo.User.AssignRoleReq;
 import com.project.evaluation.vo.User.LoginReq;
+import com.project.evaluation.vo.User.LoginResp;
+import com.project.evaluation.vo.User.LoginUserVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +28,7 @@ public class UserController {
      */
     @PostMapping("/login")
     @CrossOrigin
-    public Result login(@RequestBody LoginReq loginReq) {
+    public Result<LoginResp> login(@RequestBody LoginReq loginReq) {
         return userService.checkLogin(loginReq);
     }
 
@@ -53,6 +56,20 @@ public class UserController {
     @CrossOrigin
     public Result<List<Authority>> getUserAuthority() {
         return userService.getUserAuthority();
+    }
+
+    /**
+     * 用户管理分页列表（不含密码）
+     */
+    @GetMapping("/list")
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<PageBean<LoginUserVO>> userList(
+            @RequestParam Integer pageNum,
+            @RequestParam Integer pageSize,
+            @RequestParam(required = false) String studentId,
+            @RequestParam(required = false) Integer status) {
+        return Result.success(userService.paginationQueryUsers(pageNum, pageSize, studentId, status));
     }
 
     /**
