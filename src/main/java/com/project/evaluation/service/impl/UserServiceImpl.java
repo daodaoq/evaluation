@@ -19,9 +19,11 @@ import com.project.evaluation.service.UserService;
 import com.project.evaluation.utils.JwtUtil;
 import com.project.evaluation.utils.SecurityContextUtil;
 import com.project.evaluation.vo.College.AddCollegeReq;
+import com.project.evaluation.vo.User.AddTeacherReq;
 import com.project.evaluation.vo.User.LoginReq;
 import com.project.evaluation.vo.User.LoginResp;
 import com.project.evaluation.vo.User.LoginUserVO;
+import com.project.evaluation.vo.User.UpdateTeacherReq;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -56,7 +58,9 @@ public class UserServiceImpl implements UserService {
 
     /** 与 JWT、Redis 会话一致：24 小时 */
     private static final long LOGIN_TOKEN_TTL_MS = 1000L * 60 * 60 * 24;
+    private static final int STUDENT_ROLE_ID = 1;
     private static final int TEACHER_ROLE_ID = 2;
+    private static final int ADMIN_ROLE_ID = 3;
     private static final String DEFAULT_IMPORT_PASSWORD = "123456";
 
     @Autowired
@@ -100,6 +104,13 @@ public class UserServiceImpl implements UserService {
 
             MyUserDetails principal = (MyUserDetails) authentication.getPrincipal();
             MyUser myUser = principal.getMyUser();
+            Integer uid = myUser.getId();
+            boolean hasStudentRole = userMapper.countUserRole(uid, STUDENT_ROLE_ID) > 0;
+            boolean hasTeacherRole = userMapper.countUserRole(uid, TEACHER_ROLE_ID) > 0;
+            boolean hasAdminRole = userMapper.countUserRole(uid, ADMIN_ROLE_ID) > 0;
+            if (hasStudentRole && !hasTeacherRole && !hasAdminRole) {
+                return Result.error("您的权限不足");
+            }
             String jwtKey = "user:" + myUser.getId();
             String token = JwtUtil.createToken(jwtKey, LOGIN_TOKEN_TTL_MS);
 
@@ -365,6 +376,85 @@ public class UserServiceImpl implements UserService {
         return affected;
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void addTeacher(AddTeacherReq req) {
+        if (req == null || !StringUtils.hasText(req.getTeacherNo()) || !StringUtils.hasText(req.getPassword())
+                || !StringUtils.hasText(req.getRealName())) {
+            throw new IllegalArgumentException("工号、密码、姓名不能为空");
+        }
+        String teacherNo = req.getTeacherNo().trim();
+        if (userMapper.countByStudentId(teacherNo) > 0) {
+            throw new IllegalArgumentException("该工号已存在");
+        }
+        MyUser u = new MyUser();
+        u.setStudentId(teacherNo);
+        u.setPassword(passwordEncoder.encode(req.getPassword().trim()));
+        u.setRealName(req.getRealName().trim());
+        u.setCollegeId(req.getCollegeId());
+        u.setClassId(null);
+        u.setStatus(req.getStatus() != null ? req.getStatus() : 1);
+        userMapper.insertUser(u);
+        if (u.getId() == null) {
+            throw new IllegalStateException("创建教师账号失败");
+        }
+        userMapper.addUserRole(u.getId(), TEACHER_ROLE_ID);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void updateTeacher(Integer id, UpdateTeacherReq req) {
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("非法用户ID");
+        }
+        if (!isTeacherOrAdmin(id)) {
+            throw new IllegalArgumentException("该用户不是教师/管理员或不存在");
+        }
+        MyUser u = userMapper.selectById(id);
+        if (u == null) {
+            throw new IllegalArgumentException("用户不存在");
+        }
+        if (StringUtils.hasText(req.getTeacherNo())) {
+            String teacherNo = req.getTeacherNo().trim();
+            if (!teacherNo.equals(u.getStudentId()) && userMapper.countByStudentIdExcludeId(teacherNo, id) > 0) {
+                throw new IllegalArgumentException("该工号已被占用");
+            }
+            u.setStudentId(teacherNo);
+        }
+        if (StringUtils.hasText(req.getPassword())) {
+            u.setPassword(passwordEncoder.encode(req.getPassword().trim()));
+        } else {
+            u.setPassword(null);
+        }
+        if (req.getRealName() != null) {
+            u.setRealName(req.getRealName().trim());
+        }
+        u.setCollegeId(req.getCollegeId());
+        u.setClassId(null);
+        if (req.getStatus() != null) {
+            u.setStatus(req.getStatus());
+        }
+        userMapper.updateUserSelective(u);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteTeacher(Integer id) {
+        if (id == null || id <= 0) {
+            throw new IllegalArgumentException("非法用户ID");
+        }
+        if (!isTeacherOrAdmin(id)) {
+            throw new IllegalArgumentException("该用户不是教师/管理员或不存在");
+        }
+        userMapper.deleteUserRoles(id);
+        userMapper.deleteUserById(id);
+    }
+
+    @Override
+    public List<College> listColleges() {
+        return collegeService.collegeList();
+    }
+
     private static String cell(List<Object> row, int idx) {
         if (row == null || idx < 0 || idx >= row.size() || row.get(idx) == null) return "";
         return String.valueOf(row.get(idx)).trim();
@@ -383,6 +473,11 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Excel 表头必须包含：工号、真实姓名、学院");
         }
         return idx;
+    }
+
+    private boolean isTeacherOrAdmin(Integer userId) {
+        return userMapper.countUserRole(userId, TEACHER_ROLE_ID) > 0
+                || userMapper.countUserRole(userId, ADMIN_ROLE_ID) > 0;
     }
 
     private record ImportTeacherRow(String jobNo, String realName, String collegeName) {}

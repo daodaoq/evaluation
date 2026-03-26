@@ -1,14 +1,18 @@
 package com.project.evaluation.controller;
 
 import com.project.evaluation.entity.Authority;
+import com.project.evaluation.entity.College;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.UserService;
+import com.project.evaluation.vo.User.AddTeacherReq;
 import com.project.evaluation.vo.User.AssignRoleReq;
 import com.project.evaluation.vo.User.BatchAssignRoleReq;
+import com.project.evaluation.vo.User.DeleteTeacherReq;
 import com.project.evaluation.vo.User.LoginReq;
 import com.project.evaluation.vo.User.LoginResp;
 import com.project.evaluation.vo.User.LoginUserVO;
+import com.project.evaluation.vo.User.UpdateTeacherReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -72,6 +76,61 @@ public class UserController {
             @RequestParam(required = false) String studentId,
             @RequestParam(required = false) Integer status) {
         return Result.success(userService.paginationQueryUsers(pageNum, pageSize, studentId, status));
+    }
+
+    /**
+     * 新增教师（默认绑定教师角色）
+     */
+    @PostMapping
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<?> addTeacher(@RequestBody AddTeacherReq req) {
+        try {
+            userService.addTeacher(req);
+            return Result.success();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 编辑教师
+     */
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<?> updateTeacher(@PathVariable Integer id, @RequestBody UpdateTeacherReq req) {
+        try {
+            userService.updateTeacher(id, req);
+            return Result.success();
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 删除教师
+     */
+    @DeleteMapping
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<?> deleteTeacher(@RequestBody DeleteTeacherReq req) {
+        try {
+            userService.deleteTeacher(req.getId());
+            return Result.success();
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 教师管理页学院下拉
+     */
+    @GetMapping("/colleges")
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<List<College>> colleges() {
+        return Result.success(userService.listColleges());
     }
 
     /**

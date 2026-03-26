@@ -1,12 +1,15 @@
 package com.project.evaluation.service;
 
 import com.project.evaluation.entity.Authority;
+import com.project.evaluation.entity.College;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.SysPermission;
+import com.project.evaluation.vo.User.AddTeacherReq;
 import com.project.evaluation.vo.User.LoginReq;
 import com.project.evaluation.vo.User.LoginResp;
 import com.project.evaluation.vo.User.LoginUserVO;
+import com.project.evaluation.vo.User.UpdateTeacherReq;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -35,4 +38,12 @@ public interface UserService {
     int importTeachersByExcel(MultipartFile file);
 
     int batchAssignSameRole(List<Integer> userIds, Integer roleId);
+
+    void addTeacher(AddTeacherReq req);
+
+    void updateTeacher(Integer id, UpdateTeacherReq req);
+
+    void deleteTeacher(Integer id);
+
+    List<College> listColleges();
 }
