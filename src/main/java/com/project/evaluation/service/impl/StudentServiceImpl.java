@@ -46,7 +46,7 @@ public class StudentServiceImpl implements StudentService {
 
     /** 与种子数据一致：sys_role.id = 1，role_key = STUDENT */
     private static final int STUDENT_ROLE_ID = 1;
-    private static final String DEFAULT_IMPORT_PASSWORD = "123456";
+    private static final String IMPORT_PASSWORD_PREFIX = "Sdut";
     private static final Pattern TWO_DIGIT_PATTERN = Pattern.compile("(\\d{2})");
 
     @Autowired
@@ -348,7 +348,7 @@ public class StudentServiceImpl implements StudentService {
             }
             MyUser u = new MyUser();
             u.setStudentId(r.studentId);
-            u.setPassword(passwordEncoder.encode(DEFAULT_IMPORT_PASSWORD));
+            u.setPassword(passwordEncoder.encode(IMPORT_PASSWORD_PREFIX + r.studentId));
             u.setRealName(r.realName);
             u.setCollegeId(college.getId());
             u.setClassId(clazz.getId());

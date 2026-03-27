@@ -64,7 +64,7 @@ public class UserServiceImpl implements UserService {
     private static final int STUDENT_ROLE_ID = 1;
     private static final int TEACHER_ROLE_ID = 2;
     private static final int ADMIN_ROLE_ID = 3;
-    private static final String DEFAULT_IMPORT_PASSWORD = "123456";
+    private static final String IMPORT_PASSWORD_PREFIX = "Sdut";
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -352,7 +352,7 @@ public class UserServiceImpl implements UserService {
             }
             MyUser u = new MyUser();
             u.setStudentId(r.jobNo);
-            u.setPassword(passwordEncoder.encode(DEFAULT_IMPORT_PASSWORD));
+            u.setPassword(passwordEncoder.encode(IMPORT_PASSWORD_PREFIX + r.jobNo));
             u.setRealName(r.realName);
             u.setCollegeId(c.getId());
             u.setClassId(null);
