@@ -14,9 +14,13 @@ public interface RuleMapper {
      * 添加规则总览
      * @param addRuleReq
      */
-    @Insert("INSERT INTO `evaluation_rule`" +
-            "(period_id, rule_name, version_code, status, create_time, update_time)"+
-            "VALUES(#{periodId}, #{ruleName}, #{versionCode}, #{status}, NOW(), NOW())")
+    @Insert("""
+            INSERT INTO `evaluation_rule` (
+                period_id, rule_name, version_code, moral_weight, academic_weight, quality_weight, status, create_time, update_time
+            ) VALUES (
+                #{periodId}, #{ruleName}, #{versionCode}, #{moralWeight}, #{academicWeight}, #{qualityWeight}, #{status}, NOW(), NOW()
+            )
+            """)
     void addRule(AddRuleReq addRuleReq);
 
     /**
@@ -30,11 +34,17 @@ public interface RuleMapper {
      * 更新规则总览信息
      * @param updateRuleReq
      */
-    @Update("UPDATE `evaluation_rule` SET "+
-            "rule_name = #{updateRuleReq.ruleName},"+
-            "version_code = #{updateRuleReq.versionCode},"+
-            "status = #{updateRuleReq.status}," +
-            "update_time = NOW() WHERE id = #{id}")
+    @Update("""
+            UPDATE `evaluation_rule` SET
+                rule_name = #{updateRuleReq.ruleName},
+                version_code = #{updateRuleReq.versionCode},
+                moral_weight = #{updateRuleReq.moralWeight},
+                academic_weight = #{updateRuleReq.academicWeight},
+                quality_weight = #{updateRuleReq.qualityWeight},
+                status = #{updateRuleReq.status},
+                update_time = NOW()
+            WHERE id = #{id}
+            """)
     void updateRule(Integer id, UpdateRuleReq updateRuleReq);
 
     /**

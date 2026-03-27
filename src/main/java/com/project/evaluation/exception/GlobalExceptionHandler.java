@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
@@ -22,6 +23,22 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler
 {
+    /**
+     * SQL 语法/字段异常（常见于库结构未执行迁移）
+     */
+    @ExceptionHandler(BadSqlGrammarException.class)
+    public Result<?> handleBadSqlGrammar(BadSqlGrammarException e, HttpServletRequest request) {
+        log.error("SQL异常: method={}, uri={}, msg={}", request.getMethod(), request.getRequestURI(), e.getMessage(), e);
+        String raw = e.getMessage() == null ? "" : e.getMessage();
+        if (raw.contains("Unknown column 'ai.source_type'")) {
+            return Result.error("数据库缺少字段 source_type，请先执行 SQL：evaluation/sql/migrate_student_submit_schema_fix.sql");
+        }
+        if (raw.contains("Unknown column 'ri.score_mode'") || raw.contains("Unknown column 'ri.module_code'")) {
+            return Result.error("数据库缺少规则项扩展字段，请先执行 SQL：evaluation/sql/migrate_student_submit_schema_fix.sql");
+        }
+        return Result.error("数据库结构与当前代码不匹配，请执行最新迁移 SQL 后重试");
+    }
+
     /**
      * @Validated / @RequestParam 约束异常
      */

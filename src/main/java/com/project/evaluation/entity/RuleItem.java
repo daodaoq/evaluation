@@ -2,6 +2,7 @@ package com.project.evaluation.entity;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -67,6 +68,31 @@ public class RuleItem {
      * 是否启用
      */
     private Integer status;
+
+    /**
+     * 计分方式：ADD / SUB / MAX_ONLY
+     */
+    private String scoreMode;
+
+    /**
+     * 同类去重组（同组取最高）
+     */
+    private String dedupeGroup;
+
+    /**
+     * 系数（如第二职务 ×0.5）
+     */
+    private BigDecimal coeff;
+
+    /**
+     * 模块编码：MORAL / ACADEMIC / QUALITY
+     */
+    private String moduleCode;
+
+    /**
+     * 子模块编码
+     */
+    private String submoduleCode;
 
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

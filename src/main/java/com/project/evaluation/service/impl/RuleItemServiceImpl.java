@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -28,6 +29,12 @@ public class RuleItemServiceImpl implements RuleItemService {
      */
     @Override
     public void addRuleItem(AddRuleItemReq addRuleItemReq) {
+        if (!StringUtils.hasText(addRuleItemReq.getScoreMode())) {
+            addRuleItemReq.setScoreMode("ADD");
+        }
+        if (addRuleItemReq.getCoeff() == null) {
+            addRuleItemReq.setCoeff(new BigDecimal("1.000"));
+        }
         ruleItemMapper.addRuleItem(addRuleItemReq);
         log.info("添加成功：{}",addRuleItemReq);
     }
@@ -57,6 +64,17 @@ public class RuleItemServiceImpl implements RuleItemService {
      */
     @Override
     public void updateRuleItem(Integer id, UpdateRuleItemReq updateRuleItemReq) {
+        RuleItem existing = ruleItemMapper.findRuleItemById(id);
+        if (existing != null) {
+            if (!StringUtils.hasText(updateRuleItemReq.getScoreMode())) {
+                updateRuleItemReq.setScoreMode(
+                        StringUtils.hasText(existing.getScoreMode()) ? existing.getScoreMode() : "ADD");
+            }
+            if (updateRuleItemReq.getCoeff() == null) {
+                updateRuleItemReq.setCoeff(
+                        existing.getCoeff() != null ? existing.getCoeff() : new BigDecimal("1.000"));
+            }
+        }
         ruleItemMapper.updateRuleItem(id, updateRuleItemReq);
     }
 

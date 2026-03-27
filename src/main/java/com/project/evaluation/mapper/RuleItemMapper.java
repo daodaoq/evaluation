@@ -19,17 +19,22 @@ public interface RuleItemMapper {
      */
     @Insert("""
         INSERT INTO evaluation_rule_item (
-        rule_id,
-        item_name,
-        item_type,
-        item_category,
-        level,
-        base_score,
-        is_competition,
-        need_material,
-        status,
-        create_time,
-        update_time
+            rule_id,
+            item_name,
+            item_type,
+            item_category,
+            level,
+            base_score,
+            is_competition,
+            need_material,
+            status,
+            score_mode,
+            dedupe_group,
+            coeff,
+            module_code,
+            submodule_code,
+            create_time,
+            update_time
         ) VALUES (
             #{ruleId},
             #{itemName},
@@ -40,6 +45,11 @@ public interface RuleItemMapper {
             #{isCompetition},
             #{needMaterial},
             #{status},
+            #{scoreMode},
+            #{dedupeGroup},
+            #{coeff},
+            #{moduleCode},
+            #{submoduleCode},
             NOW(),
             NOW()
         )
@@ -58,17 +68,25 @@ public interface RuleItemMapper {
      * 更新规则项信息
      * @param updateRuleItemReq
      */
-    @Update("UPDATE `evaluation_rule_item` SET "+
-            "rule_id = #{updateRuleItemReq.ruleId},"+
-            "item_name = #{updateRuleItemReq.itemName},"+
-            "item_type = #{updateRuleItemReq.itemType},"+
-            "item_category = #{updateRuleItemReq.itemCategory}," +
-            "level = #{updateRuleItemReq.level}," +
-            "base_score = #{updateRuleItemReq.baseScore}," +
-            "is_competition = #{updateRuleItemReq.isCompetition}," +
-            "need_material = #{updateRuleItemReq.needMaterial}," +
-            "status = #{updateRuleItemReq.status}," +
-            "update_time = NOW() WHERE id = #{id}")
+    @Update("""
+            UPDATE `evaluation_rule_item` SET
+                rule_id = #{updateRuleItemReq.ruleId},
+                item_name = #{updateRuleItemReq.itemName},
+                item_type = #{updateRuleItemReq.itemType},
+                item_category = #{updateRuleItemReq.itemCategory},
+                level = #{updateRuleItemReq.level},
+                base_score = #{updateRuleItemReq.baseScore},
+                is_competition = #{updateRuleItemReq.isCompetition},
+                need_material = #{updateRuleItemReq.needMaterial},
+                status = #{updateRuleItemReq.status},
+                score_mode = #{updateRuleItemReq.scoreMode},
+                dedupe_group = #{updateRuleItemReq.dedupeGroup},
+                coeff = #{updateRuleItemReq.coeff},
+                module_code = #{updateRuleItemReq.moduleCode},
+                submodule_code = #{updateRuleItemReq.submoduleCode},
+                update_time = NOW()
+            WHERE id = #{id}
+            """)
     void updateRuleItem(Integer id, UpdateRuleItemReq updateRuleItemReq);
 
     /**

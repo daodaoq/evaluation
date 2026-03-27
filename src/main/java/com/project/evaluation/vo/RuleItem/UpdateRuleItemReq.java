@@ -2,6 +2,8 @@ package com.project.evaluation.vo.RuleItem;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * 更新规则项请求体
  */
@@ -58,4 +60,14 @@ public class UpdateRuleItemReq {
      * 是否启用
      */
     private Integer status;
+
+    private String scoreMode;
+
+    private String dedupeGroup;
+
+    private BigDecimal coeff;
+
+    private String moduleCode;
+
+    private String submoduleCode;
 }
