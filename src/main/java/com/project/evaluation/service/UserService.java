@@ -20,7 +20,7 @@ public interface UserService {
     /**
      * 用户管理分页（不含密码）
      */
-    PageBean<LoginUserVO> paginationQueryUsers(Integer pageNum, Integer pageSize, String studentId, Integer status);
+    PageBean<LoginUserVO> paginationQueryUsers(Integer pageNum, Integer pageSize, String studentId, Integer status, Integer collegeId);
 
     Result logout();
 
@@ -46,4 +46,10 @@ public interface UserService {
     void deleteTeacher(Integer id);
 
     List<College> listColleges();
+
+    /** 教师负责的班级 ID 列表（仅管理员） */
+    List<Integer> getTeacherClassIds(Integer teacherUserId);
+
+    /** 全量设置教师负责班级（仅管理员） */
+    void setTeacherClasses(Integer teacherUserId, List<Integer> classIds);
 }

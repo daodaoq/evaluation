@@ -12,6 +12,7 @@ import com.project.evaluation.vo.User.DeleteTeacherReq;
 import com.project.evaluation.vo.User.LoginReq;
 import com.project.evaluation.vo.User.LoginResp;
 import com.project.evaluation.vo.User.LoginUserVO;
+import com.project.evaluation.vo.User.SetTeacherClassesReq;
 import com.project.evaluation.vo.User.UpdateTeacherReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -74,8 +75,9 @@ public class UserController {
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
             @RequestParam(required = false) String studentId,
-            @RequestParam(required = false) Integer status) {
-        return Result.success(userService.paginationQueryUsers(pageNum, pageSize, studentId, status));
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer collegeId) {
+        return Result.success(userService.paginationQueryUsers(pageNum, pageSize, studentId, status, collegeId));
     }
 
     /**
@@ -187,5 +189,36 @@ public class UserController {
     public Result<List<Integer>> getUserRoles(@PathVariable("userId") Integer userId){
         List<Integer> roleIds = userService.getUserRoles(userId);
         return Result.success(roleIds);
+    }
+
+    /**
+     * 查询教师负责的班级 ID（仅管理员）
+     */
+    @GetMapping("/teacher/{teacherUserId}/classes")
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<List<Integer>> getTeacherClasses(@PathVariable Integer teacherUserId) {
+        try {
+            return Result.success(userService.getTeacherClassIds(teacherUserId));
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
+    }
+
+    /**
+     * 全量设置教师负责班级（仅管理员；传空数组表示清空）
+     */
+    @PutMapping("/teacher/{teacherUserId}/classes")
+    @PreAuthorize("hasAuthority('sys:user:menu')")
+    @CrossOrigin
+    public Result<?> setTeacherClasses(
+            @PathVariable Integer teacherUserId,
+            @RequestBody SetTeacherClassesReq req) {
+        try {
+            userService.setTeacherClasses(teacherUserId, req != null ? req.getClassIds() : null);
+            return Result.success();
+        } catch (IllegalArgumentException e) {
+            return Result.error(e.getMessage());
+        }
     }
 }

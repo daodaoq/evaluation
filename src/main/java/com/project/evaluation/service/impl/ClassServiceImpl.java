@@ -11,8 +11,10 @@ import com.project.evaluation.vo.Class.UpdateClassReq;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -99,6 +101,14 @@ public class ClassServiceImpl implements ClassService {
     @Override
     public List<Class> classList() {
         return classMapper.classList();
+    }
+
+    @Override
+    public List<Class> listByIds(List<Integer> ids) {
+        if (CollectionUtils.isEmpty(ids)) {
+            return Collections.emptyList();
+        }
+        return classMapper.selectByIds(ids);
     }
 
     /**

@@ -65,6 +65,8 @@ public interface ClassMapper {
     @Select("SELECT * FROM `sys_class`")
     List<Class> classList();
 
+    List<Class> selectByIds(@Param("ids") List<Integer> ids);
+
     /**
      * 分页条件查询班级
      *

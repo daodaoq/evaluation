@@ -23,7 +23,10 @@ public interface UserMapper {
     /**
      * 用户管理分页（不含密码）
      */
-    List<LoginUserVO> selectUserPage(@Param("studentId") String studentId, @Param("status") Integer status);
+    List<LoginUserVO> selectUserPage(
+            @Param("studentId") String studentId,
+            @Param("status") Integer status,
+            @Param("collegeId") Integer collegeId);
 
     /**
      * 仅含「学生」角色（sys_user_role.role_id = 学生）的分页列表
@@ -31,7 +34,20 @@ public interface UserMapper {
     List<LoginUserVO> selectStudentPage(
             @Param("studentId") String studentId,
             @Param("status") Integer status,
+            @Param("collegeId") Integer collegeId,
+            @Param("classId") Integer classId,
             @Param("studentRoleId") Integer studentRoleId);
+
+    /**
+     * 学生分页（限定班级，用于教师数据范围）
+     */
+    List<LoginUserVO> selectStudentPageScoped(
+            @Param("studentId") String studentId,
+            @Param("status") Integer status,
+            @Param("collegeId") Integer collegeId,
+            @Param("classId") Integer classId,
+            @Param("studentRoleId") Integer studentRoleId,
+            @Param("classIds") List<Integer> classIds);
 
     int insertUser(MyUser user);
 

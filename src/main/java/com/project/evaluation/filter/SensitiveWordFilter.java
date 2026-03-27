@@ -35,6 +35,13 @@ public class SensitiveWordFilter extends OncePerRequestFilter {
     @Autowired
     private ObjectMapper objectMapper;
 
+    /** Excel 等文件上传为 multipart，不缓冲整包请求体。 */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String contentType = request.getContentType();
+        return contentType != null && contentType.toLowerCase().startsWith("multipart/");
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {

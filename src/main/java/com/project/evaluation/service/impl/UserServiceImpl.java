@@ -13,7 +13,9 @@ import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.SysPermission;
 import com.project.evaluation.mapper.AuthorityMapper;
 import com.project.evaluation.mapper.SysPermissionMapper;
+import com.project.evaluation.mapper.TeacherClassMapper;
 import com.project.evaluation.mapper.UserMapper;
+import com.project.evaluation.service.ClassService;
 import com.project.evaluation.service.CollegeService;
 import com.project.evaluation.service.UserService;
 import com.project.evaluation.utils.JwtUtil;
@@ -32,6 +34,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -82,6 +85,12 @@ public class UserServiceImpl implements UserService {
     private CollegeService collegeService;
 
     @Autowired
+    private ClassService classService;
+
+    @Autowired
+    private TeacherClassMapper teacherClassMapper;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     /**
@@ -130,10 +139,10 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public PageBean<LoginUserVO> paginationQueryUsers(Integer pageNum, Integer pageSize, String studentId, Integer status) {
+    public PageBean<LoginUserVO> paginationQueryUsers(Integer pageNum, Integer pageSize, String studentId, Integer status, Integer collegeId) {
         PageBean<LoginUserVO> pb = new PageBean<>();
         PageHelper.startPage(pageNum, pageSize);
-        List<LoginUserVO> list = userMapper.selectUserPage(studentId, status);
+        List<LoginUserVO> list = userMapper.selectUserPage(studentId, status, collegeId);
         Page<LoginUserVO> page = (Page<LoginUserVO>) list;
         pb.setTotal(page.getTotal());
         pb.setItems(page.getResult());
@@ -279,7 +288,7 @@ public class UserServiceImpl implements UserService {
 
         Map<String, Integer> header = parseTeacherHeader(rows.get(0));
         int idxNo = header.get("工号");
-        int idxName = header.get("真实姓名");
+        int idxName = header.get("姓名");
         int idxCollege = header.get("学院");
 
         Set<String> noInFile = new HashSet<>();
@@ -292,7 +301,7 @@ public class UserServiceImpl implements UserService {
             String collegeName = cell(row, idxCollege);
             int line = i + 1;
             if (!StringUtils.hasText(no) || !StringUtils.hasText(realName) || !StringUtils.hasText(collegeName)) {
-                errors.add("第" + line + "行：工号、真实姓名、学院不能为空");
+                errors.add("第" + line + "行：工号、姓名、学院不能为空");
                 continue;
             }
             no = no.trim();
@@ -446,6 +455,7 @@ public class UserServiceImpl implements UserService {
         if (!isTeacherOrAdmin(id)) {
             throw new IllegalArgumentException("该用户不是教师/管理员或不存在");
         }
+        teacherClassMapper.deleteByTeacherUserId(id);
         userMapper.deleteUserRoles(id);
         userMapper.deleteUserById(id);
     }
@@ -453,6 +463,54 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<College> listColleges() {
         return collegeService.collegeList();
+    }
+
+    @Override
+    public List<Integer> getTeacherClassIds(Integer teacherUserId) {
+        if (!isCurrentUserAdmin()) {
+            throw new AccessDeniedException("仅管理员可操作");
+        }
+        if (teacherUserId == null || teacherUserId <= 0) {
+            throw new IllegalArgumentException("非法教师用户ID");
+        }
+        if (userMapper.countUserRole(teacherUserId, TEACHER_ROLE_ID) == 0) {
+            throw new IllegalArgumentException("该用户不是教师");
+        }
+        return teacherClassMapper.selectClassIdsByTeacherUserId(teacherUserId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void setTeacherClasses(Integer teacherUserId, List<Integer> classIds) {
+        if (!isCurrentUserAdmin()) {
+            throw new AccessDeniedException("仅管理员可操作");
+        }
+        if (teacherUserId == null || teacherUserId <= 0) {
+            throw new IllegalArgumentException("非法教师用户ID");
+        }
+        if (userMapper.countUserRole(teacherUserId, TEACHER_ROLE_ID) == 0) {
+            throw new IllegalArgumentException("该用户不是教师");
+        }
+        teacherClassMapper.deleteByTeacherUserId(teacherUserId);
+        if (classIds == null || classIds.isEmpty()) {
+            return;
+        }
+        Set<Integer> seen = new HashSet<>();
+        for (Integer cid : classIds) {
+            if (cid == null || !seen.add(cid)) {
+                continue;
+            }
+            if (classService.findClassById(cid) == null) {
+                throw new IllegalArgumentException("班级不存在: " + cid);
+            }
+            teacherClassMapper.insert(teacherUserId, cid);
+        }
+    }
+
+    private boolean isCurrentUserAdmin() {
+        Integer uid = SecurityContextUtil.getCurrentUserId();
+        List<Integer> roles = userMapper.getUserRoles(uid);
+        return roles != null && roles.contains(ADMIN_ROLE_ID);
     }
 
     private static String cell(List<Object> row, int idx) {
@@ -469,8 +527,12 @@ public class UserServiceImpl implements UserService {
             String h = headerRow.get(i) == null ? "" : String.valueOf(headerRow.get(i)).trim();
             if (StringUtils.hasText(h)) idx.put(h, i);
         }
-        if (!idx.containsKey("工号") || !idx.containsKey("真实姓名") || !idx.containsKey("学院")) {
-            throw new IllegalArgumentException("Excel 表头必须包含：工号、真实姓名、学院");
+        // 兼容旧模板“真实姓名”，统一映射为“姓名”
+        if (!idx.containsKey("姓名") && idx.containsKey("真实姓名")) {
+            idx.put("姓名", idx.get("真实姓名"));
+        }
+        if (!idx.containsKey("工号") || !idx.containsKey("姓名") || !idx.containsKey("学院")) {
+            throw new IllegalArgumentException("Excel 表头必须包含：工号、姓名、学院");
         }
         return idx;
     }

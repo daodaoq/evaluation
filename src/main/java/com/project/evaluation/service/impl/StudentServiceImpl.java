@@ -13,6 +13,7 @@ import com.project.evaluation.mapper.UserMapper;
 import com.project.evaluation.service.ClassService;
 import com.project.evaluation.service.CollegeService;
 import com.project.evaluation.service.StudentService;
+import com.project.evaluation.service.TeacherScopeService;
 import com.project.evaluation.vo.Class.AddClassReq;
 import com.project.evaluation.vo.College.AddCollegeReq;
 import com.project.evaluation.vo.User.LoginUserVO;
@@ -21,6 +22,7 @@ import com.project.evaluation.vo.Student.UpdateStudentReq;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -28,11 +30,13 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,12 +64,31 @@ public class StudentServiceImpl implements StudentService {
     @Autowired
     private ClassMapper classMapper;
 
+    @Autowired
+    private TeacherScopeService teacherScopeService;
+
     @Override
-    public PageBean<LoginUserVO> pageStudents(Integer pageNum, Integer pageSize, String studentId, Integer status) {
+    public PageBean<LoginUserVO> pageStudents(Integer pageNum, Integer pageSize, String studentId, Integer status, Integer collegeId, Integer classId) {
+        TeacherScopeService.StudentMenuScope scope = teacherScopeService.resolveStudentMenuScope();
+        if (scope == TeacherScopeService.StudentMenuScope.DENIED) {
+            throw new AccessDeniedException("无权限");
+        }
         PageBean<LoginUserVO> pb = new PageBean<>();
+        if (scope == TeacherScopeService.StudentMenuScope.ADMIN) {
+            PageHelper.startPage(pageNum, pageSize);
+            List<LoginUserVO> list = userMapper.selectStudentPage(studentId, status, collegeId, classId, STUDENT_ROLE_ID);
+            pb.setTotal(((Page<LoginUserVO>) list).getTotal());
+            pb.setItems(((Page<LoginUserVO>) list).getResult());
+            return pb;
+        }
+        List<Integer> classIds = teacherScopeService.getManagedClassIdsForCurrentTeacher();
+        if (classIds == null || classIds.isEmpty()) {
+            pb.setTotal(0L);
+            pb.setItems(Collections.emptyList());
+            return pb;
+        }
         PageHelper.startPage(pageNum, pageSize);
-        List<LoginUserVO> list = userMapper.selectStudentPage(studentId, status, STUDENT_ROLE_ID);
-        // 避免静态分析对 Page 变量的资源泄露误判
+        List<LoginUserVO> list = userMapper.selectStudentPageScoped(studentId, status, collegeId, classId, STUDENT_ROLE_ID, classIds);
         pb.setTotal(((Page<LoginUserVO>) list).getTotal());
         pb.setItems(((Page<LoginUserVO>) list).getResult());
         return pb;
@@ -78,6 +101,7 @@ public class StudentServiceImpl implements StudentService {
                 || !StringUtils.hasText(req.getRealName())) {
             throw new IllegalArgumentException("学号、密码、姓名不能为空");
         }
+        teacherScopeService.assertCanSetStudentClass(req.getClassId());
         if (userMapper.countByStudentId(req.getStudentId().trim()) > 0) {
             throw new IllegalArgumentException("该学号已存在");
         }
@@ -104,6 +128,10 @@ public class StudentServiceImpl implements StudentService {
         }
         if (userMapper.countUserRole(id, STUDENT_ROLE_ID) == 0) {
             throw new IllegalArgumentException("该用户不是学生或不存在");
+        }
+        teacherScopeService.assertCanOperateStudentUser(id);
+        if (req.getClassId() != null) {
+            teacherScopeService.assertCanSetStudentClass(req.getClassId());
         }
         MyUser u = userMapper.selectById(id);
         if (u == null) {
@@ -142,6 +170,7 @@ public class StudentServiceImpl implements StudentService {
         if (userMapper.countUserRole(id, STUDENT_ROLE_ID) == 0) {
             throw new IllegalArgumentException("该用户不是学生或不存在");
         }
+        teacherScopeService.assertCanOperateStudentUser(id);
         userMapper.deleteUserRoles(id);
         userMapper.deleteUserById(id);
         log.info("删除学生账号: id={}", id);
@@ -150,6 +179,19 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int importStudentsByExcel(MultipartFile file) {
+        TeacherScopeService.StudentMenuScope scope = teacherScopeService.resolveStudentMenuScope();
+        if (scope == TeacherScopeService.StudentMenuScope.DENIED) {
+            throw new AccessDeniedException("无权限");
+        }
+        final List<Integer> teacherManagedClassIds;
+        if (scope == TeacherScopeService.StudentMenuScope.TEACHER) {
+            teacherManagedClassIds = teacherScopeService.getManagedClassIdsForCurrentTeacher();
+            if (teacherManagedClassIds == null || teacherManagedClassIds.isEmpty()) {
+                throw new IllegalArgumentException("您尚未被分配负责班级，无法导入");
+            }
+        } else {
+            teacherManagedClassIds = null;
+        }
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("请上传 Excel 文件");
         }
@@ -219,9 +261,34 @@ public class StudentServiceImpl implements StudentService {
                 collegeByName.put(c.getCollegeName().trim(), c);
             }
         }
+        Map<String, Class> classByCollegeAndName = new HashMap<>();
+        for (Class cl : classService.classList()) {
+            if (cl == null || cl.getCollegeId() == null || !StringUtils.hasText(cl.getClassName())) continue;
+            classByCollegeAndName.put(keyOf(cl.getCollegeId(), cl.getClassName().trim()), cl);
+        }
+        List<ImportStudentRow> importRows = validRows;
+        int skippedByScope = 0;
+        if (teacherManagedClassIds != null) {
+            Set<Integer> managedSet = new HashSet<>(teacherManagedClassIds);
+            List<ImportStudentRow> scopedRows = new java.util.ArrayList<>();
+            for (ImportStudentRow r : validRows) {
+                College c = collegeByName.get(r.collegeName);
+                if (c == null || c.getId() == null) {
+                    skippedByScope++;
+                    continue;
+                }
+                Class cl = classByCollegeAndName.get(keyOf(c.getId(), r.className));
+                if (cl == null || cl.getId() == null || !managedSet.contains(cl.getId())) {
+                    skippedByScope++;
+                    continue;
+                }
+                scopedRows.add(r);
+            }
+            importRows = scopedRows;
+        }
         // 先补齐缺失学院（去重创建）
         Set<String> missingColleges = new HashSet<>();
-        for (ImportStudentRow r : validRows) {
+        for (ImportStudentRow r : importRows) {
             if (!collegeByName.containsKey(r.collegeName)) missingColleges.add(r.collegeName);
         }
         for (String cname : missingColleges) {
@@ -236,14 +303,9 @@ public class StudentServiceImpl implements StudentService {
             collegeByName.put(cname, created);
         }
 
-        Map<String, Class> classByCollegeAndName = new HashMap<>();
-        for (Class cl : classService.classList()) {
-            if (cl == null || cl.getCollegeId() == null || !StringUtils.hasText(cl.getClassName())) continue;
-            classByCollegeAndName.put(keyOf(cl.getCollegeId(), cl.getClassName().trim()), cl);
-        }
         // 再补齐缺失班级（按 学院+班级 去重创建）
         Set<String> missingClasses = new HashSet<>();
-        for (ImportStudentRow r : validRows) {
+        for (ImportStudentRow r : importRows) {
             College c = collegeByName.get(r.collegeName);
             if (c == null || c.getId() == null) {
                 throw new IllegalStateException("学院创建后仍不存在：" + r.collegeName);
@@ -270,7 +332,8 @@ public class StudentServiceImpl implements StudentService {
             classByCollegeAndName.put(ck, created);
         }
 
-        for (ImportStudentRow r : validRows) {
+        int imported = 0;
+        for (ImportStudentRow r : importRows) {
             College college = collegeByName.get(r.collegeName);
             if (college == null || college.getId() == null) {
                 throw new IllegalStateException("学院不存在：" + r.collegeName);
@@ -278,6 +341,10 @@ public class StudentServiceImpl implements StudentService {
             Class clazz = classByCollegeAndName.get(keyOf(college.getId(), r.className));
             if (clazz == null || clazz.getId() == null) {
                 throw new IllegalStateException("班级不存在：" + r.className);
+            }
+            if (teacherManagedClassIds != null && !teacherManagedClassIds.contains(clazz.getId())) {
+                skippedByScope++;
+                continue;
             }
             MyUser u = new MyUser();
             u.setStudentId(r.studentId);
@@ -291,9 +358,50 @@ public class StudentServiceImpl implements StudentService {
                 throw new IllegalStateException("导入失败：创建用户异常(" + r.studentId + ")");
             }
             userMapper.addUserRole(u.getId(), STUDENT_ROLE_ID);
+            imported++;
         }
-        log.info("Excel 导入学生成功：{} 条", validRows.size());
-        return validRows.size();
+        if (teacherManagedClassIds != null && skippedByScope > 0) {
+            log.info("教师导入学生：按负责班级过滤跳过 {} 条", skippedByScope);
+        }
+        log.info("Excel 导入学生成功：{} 条", imported);
+        return imported;
+    }
+
+    @Override
+    public List<Class> listClassesForStudentMenu() {
+        TeacherScopeService.StudentMenuScope scope = teacherScopeService.resolveStudentMenuScope();
+        if (scope == TeacherScopeService.StudentMenuScope.DENIED) {
+            throw new AccessDeniedException("无权限");
+        }
+        if (scope == TeacherScopeService.StudentMenuScope.ADMIN) {
+            return classService.classList();
+        }
+        List<Integer> ids = teacherScopeService.getManagedClassIdsForCurrentTeacher();
+        return classService.listByIds(ids);
+    }
+
+    @Override
+    public List<College> listCollegesForStudentMenu() {
+        TeacherScopeService.StudentMenuScope scope = teacherScopeService.resolveStudentMenuScope();
+        if (scope == TeacherScopeService.StudentMenuScope.DENIED) {
+            throw new AccessDeniedException("无权限");
+        }
+        if (scope == TeacherScopeService.StudentMenuScope.ADMIN) {
+            return collegeService.collegeList();
+        }
+        List<Class> classes = listClassesForStudentMenu();
+        Set<Integer> collegeIds = new HashSet<>();
+        for (Class cl : classes) {
+            if (cl.getCollegeId() != null) {
+                collegeIds.add(cl.getCollegeId());
+            }
+        }
+        if (collegeIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return collegeService.collegeList().stream()
+                .filter(c -> c.getId() != null && collegeIds.contains(c.getId()))
+                .collect(Collectors.toList());
     }
 
     private static String keyOf(Integer collegeId, String className) {

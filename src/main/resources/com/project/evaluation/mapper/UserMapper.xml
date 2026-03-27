@@ -36,6 +36,9 @@
             <if test="status != null">
                 AND u.status = #{status}
             </if>
+            <if test="collegeId != null">
+                AND u.college_id = #{collegeId}
+            </if>
             AND EXISTS (
                 SELECT 1
                 FROM sys_user_role ur
@@ -52,18 +55,70 @@
             u.student_id AS userNo,
             u.real_name AS userName,
             u.college_id AS collegeId,
+            c.college_name AS collegeName,
             u.class_id AS classId,
+            cl.class_name AS className,
             u.status,
             u.create_time AS createTime,
             u.update_time AS updateTime
         FROM sys_user u
         INNER JOIN sys_user_role ur ON u.id = ur.user_id AND ur.role_id = #{studentRoleId}
+        LEFT JOIN sys_college c ON u.college_id = c.id
+        LEFT JOIN sys_class cl ON u.class_id = cl.id
         <where>
             <if test="studentId != null and studentId != ''">
                 AND u.student_id LIKE CONCAT('%', #{studentId}, '%')
             </if>
             <if test="status != null">
                 AND u.status = #{status}
+            </if>
+            <if test="collegeId != null">
+                AND u.college_id = #{collegeId}
+            </if>
+            <if test="classId != null">
+                AND u.class_id = #{classId}
+            </if>
+        </where>
+        ORDER BY u.id DESC
+    </select>
+
+    <select id="selectStudentPageScoped" resultType="com.project.evaluation.vo.User.LoginUserVO">
+        SELECT
+            u.id AS userId,
+            u.student_id AS userNo,
+            u.real_name AS userName,
+            u.college_id AS collegeId,
+            c.college_name AS collegeName,
+            u.class_id AS classId,
+            cl.class_name AS className,
+            u.status,
+            u.create_time AS createTime,
+            u.update_time AS updateTime
+        FROM sys_user u
+        INNER JOIN sys_user_role ur ON u.id = ur.user_id AND ur.role_id = #{studentRoleId}
+        LEFT JOIN sys_college c ON u.college_id = c.id
+        LEFT JOIN sys_class cl ON u.class_id = cl.id
+        <where>
+            <if test="studentId != null and studentId != ''">
+                AND u.student_id LIKE CONCAT('%', #{studentId}, '%')
+            </if>
+            <if test="status != null">
+                AND u.status = #{status}
+            </if>
+            <if test="collegeId != null">
+                AND u.college_id = #{collegeId}
+            </if>
+            <if test="classId != null">
+                AND u.class_id = #{classId}
+            </if>
+            <if test="classIds != null and classIds.size() &gt; 0">
+                AND u.class_id IN
+                <foreach collection="classIds" item="cid" open="(" separator="," close=")">
+                    #{cid}
+                </foreach>
+            </if>
+            <if test="classIds != null and classIds.size() == 0">
+                AND 1 = 0
             </if>
         </where>
         ORDER BY u.id DESC

@@ -23,6 +23,8 @@ public class LoginUserVO {
     /** 学院名称（列表联表展示） */
     private String collegeName;
     private Long classId;
+    /** 班级名称（列表联表展示） */
+    private String className;
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

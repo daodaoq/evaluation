@@ -4,8 +4,6 @@ import com.project.evaluation.entity.Class;
 import com.project.evaluation.entity.College;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
-import com.project.evaluation.service.ClassService;
-import com.project.evaluation.service.CollegeService;
 import com.project.evaluation.service.StudentService;
 import com.project.evaluation.vo.User.LoginUserVO;
 import com.project.evaluation.vo.Student.AddStudentReq;
@@ -25,12 +23,6 @@ public class StudentController {
     @Autowired
     private StudentService studentService;
 
-    @Autowired
-    private CollegeService collegeService;
-
-    @Autowired
-    private ClassService classService;
-
     /**
      * 学生分页（仅含绑定「学生」角色的账号）
      */
@@ -41,8 +33,10 @@ public class StudentController {
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
             @RequestParam(required = false) String studentId,
-            @RequestParam(required = false) Integer status) {
-        return Result.success(studentService.pageStudents(pageNum, pageSize, studentId, status));
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer collegeId,
+            @RequestParam(required = false) Integer classId) {
+        return Result.success(studentService.pageStudents(pageNum, pageSize, studentId, status, collegeId, classId));
     }
 
     @PostMapping
@@ -101,7 +95,7 @@ public class StudentController {
     @PreAuthorize("hasAuthority('sys:student:menu')")
     @CrossOrigin
     public Result<List<College>> colleges() {
-        return Result.success(collegeService.collegeList());
+        return Result.success(studentService.listCollegesForStudentMenu());
     }
 
     /** 下拉：班级 */
@@ -109,6 +103,6 @@ public class StudentController {
     @PreAuthorize("hasAuthority('sys:student:menu')")
     @CrossOrigin
     public Result<List<Class>> classes() {
-        return Result.success(classService.classList());
+        return Result.success(studentService.listClassesForStudentMenu());
     }
 }
