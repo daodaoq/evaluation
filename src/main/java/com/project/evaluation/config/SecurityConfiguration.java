@@ -55,6 +55,9 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
                 .logout(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/user/login", "/ws/**").permitAll()
+                        .anyRequest().authenticated())
                 .exceptionHandling(exception -> {
                     // 认证异常处理
                     exception.authenticationEntryPoint((request, response, authException) -> {

@@ -19,4 +19,9 @@ public class MyApplyVO {
     private String sourceType;
     private String customName;
     private String remark;
+    /** 最近一次申诉（按 id 最大） */
+    private Long appealId;
+    private String appealStatus;
+    private String appealReason;
+    private String appealHandlerRemark;
 }

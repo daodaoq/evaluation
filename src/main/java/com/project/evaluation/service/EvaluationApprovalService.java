@@ -12,4 +12,7 @@ public interface EvaluationApprovalService {
     void approveApplyItem(Long applyItemId, String remark);
 
     void rejectApplyItem(Long applyItemId, String remark);
+
+    /** 申诉通过后：申报项退回待审，并刷新申报单聚合状态 */
+    void reopenApplyItem(Long applyItemId);
 }

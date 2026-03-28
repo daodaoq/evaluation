@@ -84,10 +84,23 @@ public interface StudentApplyMapper {
             ri.item_name AS itemName,
             ai.source_type AS sourceType,
             ai.custom_name AS customName,
-            ai.remark AS remark
+            ai.remark AS remark,
+            lap.id AS appealId,
+            lap.status AS appealStatus,
+            lap.reason AS appealReason,
+            lap.handler_remark AS appealHandlerRemark
         FROM evaluation_apply a
         INNER JOIN evaluation_apply_item ai ON ai.apply_id = a.id
         LEFT JOIN evaluation_rule_item ri ON ai.rule_item_id = ri.id
+        LEFT JOIN (
+            SELECT x.id, x.apply_item_id, x.status, x.reason, x.handler_remark
+            FROM evaluation_apply_item_appeal x
+            INNER JOIN (
+                SELECT apply_item_id, MAX(id) AS max_id
+                FROM evaluation_apply_item_appeal
+                GROUP BY apply_item_id
+            ) m ON m.max_id = x.id
+        ) lap ON lap.apply_item_id = ai.id
         WHERE a.student_id = #{studentUserId}
         ORDER BY a.id DESC, ai.id DESC
         """)

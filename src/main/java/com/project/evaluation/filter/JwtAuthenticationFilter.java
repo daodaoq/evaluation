@@ -29,8 +29,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        String uri = request.getRequestURI();
         // 放行 /login 的请求
-        if ("/user/login".equals(request.getRequestURI())) {
+        if ("/user/login".equals(uri)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        // WebSocket 握手：浏览器无法带 Authorization，改由查询参数 token + 握手拦截器鉴权
+        if (uri != null && uri.startsWith("/ws/")) {
             filterChain.doFilter(request, response);
             return;
         }

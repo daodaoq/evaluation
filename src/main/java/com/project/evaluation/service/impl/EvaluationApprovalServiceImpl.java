@@ -64,6 +64,19 @@ public class EvaluationApprovalServiceImpl implements EvaluationApprovalService 
         refreshApplyStatus(applyItemId);
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void reopenApplyItem(Long applyItemId) {
+        if (applyItemId == null || applyItemId <= 0) {
+            throw new IllegalArgumentException("非法申报项ID");
+        }
+        int affected = evaluationApprovalMapper.updateApplyItemStatus(applyItemId, "PENDING");
+        if (affected == 0) {
+            throw new IllegalArgumentException("申报项不存在");
+        }
+        refreshApplyStatus(applyItemId);
+    }
+
     private void refreshApplyStatus(Long applyItemId) {
         Long applyId = evaluationApprovalMapper.findApplyIdByApplyItemId(applyItemId);
         if (applyId == null) {

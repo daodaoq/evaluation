@@ -18,4 +18,7 @@ public interface TeacherClassMapper {
 
     @Select("SELECT class_id FROM sys_teacher_class WHERE teacher_user_id = #{teacherUserId} ORDER BY class_id")
     List<Integer> selectClassIdsByTeacherUserId(@Param("teacherUserId") Integer teacherUserId);
+
+    @Select("SELECT DISTINCT teacher_user_id FROM sys_teacher_class WHERE class_id = #{classId} ORDER BY teacher_user_id")
+    List<Integer> selectTeacherUserIdsByClassId(@Param("classId") Integer classId);
 }

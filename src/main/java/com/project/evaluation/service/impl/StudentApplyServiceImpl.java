@@ -1,11 +1,15 @@
 package com.project.evaluation.service.impl;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.project.evaluation.entity.EvaluationApply;
 import com.project.evaluation.entity.EvaluationApplyItem;
 import com.project.evaluation.entity.EvaluationApplyMaterial;
+import com.project.evaluation.entity.MyUser;
 import com.project.evaluation.mapper.StudentApplyMapper;
+import com.project.evaluation.mapper.UserMapper;
 import com.project.evaluation.service.StudentApplyService;
 import com.project.evaluation.utils.SecurityContextUtil;
+import com.project.evaluation.ws.ApprovalNotifyService;
 import com.project.evaluation.vo.StudentApply.ApplyItemReq;
 import com.project.evaluation.vo.StudentApply.ApplyMaterialReq;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
@@ -14,6 +18,8 @@ import com.project.evaluation.vo.StudentApply.SubmitApplyReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -25,6 +31,12 @@ public class StudentApplyServiceImpl implements StudentApplyService {
 
     @Autowired
     private StudentApplyMapper studentApplyMapper;
+
+    @Autowired
+    private UserMapper userMapper;
+
+    @Autowired
+    private ApprovalNotifyService approvalNotifyService;
 
     @Override
     public List<RuleItemSimpleVO> listRuleItems(Long periodId) {
@@ -61,6 +73,28 @@ public class StudentApplyServiceImpl implements StudentApplyService {
         for (ApplyItemReq itemReq : req.getItems()) {
             validateAndInsertItem(apply.getId(), itemReq);
         }
+
+        int pendingItemCount = req.getItems().size();
+        MyUser stu = userMapper.selectById(currentUserId);
+        String payload = buildNewApplyNotifyJson(apply.getId(), req.getPeriodId(), stu, pendingItemCount);
+        Integer classId = stu != null ? stu.getClassId() : null;
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                approvalNotifyService.notifyNewApplyPendingReview(classId, payload);
+            }
+        });
+    }
+
+    private static String buildNewApplyNotifyJson(Long applyId, Long periodId, MyUser stu, int pendingItemCount) {
+        JSONObject o = new JSONObject();
+        o.put("type", "NEW_APPLY_PENDING_REVIEW");
+        o.put("applyId", applyId);
+        o.put("periodId", periodId);
+        o.put("pendingItemCount", pendingItemCount);
+        o.put("studentName", stu != null && StringUtils.hasText(stu.getRealName()) ? stu.getRealName() : "");
+        o.put("studentNo", stu != null && StringUtils.hasText(stu.getStudentId()) ? stu.getStudentId() : "");
+        return o.toJSONString();
     }
 
     @Override
