@@ -8,6 +8,7 @@ import com.project.evaluation.entity.AcademicScore;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.mapper.AcademicScoreMapper;
 import com.project.evaluation.service.AcademicScoreService;
+import com.project.evaluation.service.PeriodWorkflowService;
 import com.project.evaluation.utils.SecurityContextUtil;
 import com.project.evaluation.vo.AcademicScore.AddAcademicScoreReq;
 import com.project.evaluation.vo.AcademicScore.MyAcademicScoreVO;
@@ -28,6 +29,9 @@ public class AcademicScoreServiceImpl implements AcademicScoreService {
     @Autowired
     private AcademicScoreMapper academicScoreMapper;
 
+    @Autowired
+    private PeriodWorkflowService periodWorkflowService;
+
     @Override
     public PageBean<AcademicScore> pageQuery(Integer pageNum, Integer pageSize, Long periodId, String studentNo, String className, String studentName) {
         PageHelper.startPage(pageNum, pageSize);
@@ -39,6 +43,7 @@ public class AcademicScoreServiceImpl implements AcademicScoreService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void add(AddAcademicScoreReq req) {
+        periodWorkflowService.assertAcademicMutable(req.getPeriodId());
         AcademicScore score = toEntity(req.getPeriodId(), req.getStudentNo(), req.getClassName(), req.getStudentName(), req.getIntellectualScore());
         if (academicScoreMapper.findByPeriodAndStudentNo(score.getPeriodId(), score.getStudentNo()) != null) {
             throw new IllegalArgumentException("该周期下学号已存在智育记录，请使用编辑或导入更新");
@@ -52,6 +57,7 @@ public class AcademicScoreServiceImpl implements AcademicScoreService {
         if (id == null || id <= 0) throw new IllegalArgumentException("非法ID");
         AcademicScore exists = academicScoreMapper.findById(id);
         if (exists == null) throw new IllegalArgumentException("记录不存在");
+        periodWorkflowService.assertAcademicMutable(req.getPeriodId());
         AcademicScore score = toEntity(req.getPeriodId(), req.getStudentNo(), req.getClassName(), req.getStudentName(), req.getIntellectualScore());
         score.setId(id);
         AcademicScore conflict = academicScoreMapper.findByPeriodAndStudentNo(score.getPeriodId(), score.getStudentNo());
@@ -65,6 +71,9 @@ public class AcademicScoreServiceImpl implements AcademicScoreService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
         if (id == null || id <= 0) throw new IllegalArgumentException("非法ID");
+        AcademicScore exists = academicScoreMapper.findById(id);
+        if (exists == null) throw new IllegalArgumentException("记录不存在");
+        periodWorkflowService.assertAcademicMutable(exists.getPeriodId());
         if (academicScoreMapper.deleteById(id) == 0) throw new IllegalArgumentException("记录不存在");
     }
 
@@ -73,6 +82,7 @@ public class AcademicScoreServiceImpl implements AcademicScoreService {
     public int importExcel(Long periodId, MultipartFile file) {
         if (periodId == null || periodId <= 0) throw new IllegalArgumentException("请选择综测周期");
         if (academicScoreMapper.countPeriod(periodId) == 0) throw new IllegalArgumentException("综测周期不存在");
+        periodWorkflowService.assertAcademicMutable(periodId);
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("请上传 Excel 文件");
         String fn = file.getOriginalFilename();
         if (!StringUtils.hasText(fn) || (!fn.endsWith(".xlsx") && !fn.endsWith(".xls"))) {

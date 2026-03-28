@@ -24,6 +24,13 @@ public interface ApplyAppealMapper {
     ApplyItemOwnerRow selectItemOwner(@Param("applyItemId") Long applyItemId);
 
     @Select("""
+        SELECT a.period_id FROM evaluation_apply_item ai
+        INNER JOIN evaluation_apply a ON ai.apply_id = a.id
+        WHERE ai.id = #{applyItemId}
+        """)
+    Long findPeriodIdByApplyItemId(@Param("applyItemId") Long applyItemId);
+
+    @Select("""
         SELECT COUNT(1) FROM evaluation_apply_item_appeal
         WHERE apply_item_id = #{applyItemId} AND status = 'PENDING'
         """)

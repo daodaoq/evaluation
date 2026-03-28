@@ -8,6 +8,7 @@ import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.mapper.ApplyAppealMapper;
 import com.project.evaluation.service.ApplyAppealService;
 import com.project.evaluation.service.EvaluationApprovalService;
+import com.project.evaluation.service.PeriodWorkflowService;
 import com.project.evaluation.service.TeacherScopeService;
 import com.project.evaluation.utils.SecurityContextUtil;
 import com.project.evaluation.vo.ApplyAppeal.ApplyAppealRowVO;
@@ -35,6 +36,9 @@ public class ApplyAppealServiceImpl implements ApplyAppealService {
     @Autowired
     private TeacherScopeService teacherScopeService;
 
+    @Autowired
+    private PeriodWorkflowService periodWorkflowService;
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void submitByStudent(SubmitAppealReq req) {
@@ -58,6 +62,10 @@ public class ApplyAppealServiceImpl implements ApplyAppealService {
         }
         if (!"REJECTED".equalsIgnoreCase(owner.getItemStatus())) {
             throw new IllegalArgumentException("仅「已驳回」的申报项可申诉");
+        }
+        Long periodId = applyAppealMapper.findPeriodIdByApplyItemId(req.getApplyItemId());
+        if (periodId != null) {
+            periodWorkflowService.assertStudentCanAppeal(periodId, uid);
         }
         if (applyAppealMapper.countPendingByApplyItemId(req.getApplyItemId()) > 0) {
             throw new IllegalArgumentException("该申报项已有待处理的申诉");
@@ -106,6 +114,10 @@ public class ApplyAppealServiceImpl implements ApplyAppealService {
         }
         if (!"PENDING".equalsIgnoreCase(ap.getStatus())) {
             throw new IllegalArgumentException("该申诉已处理");
+        }
+        Long periodId = applyAppealMapper.findPeriodIdByApplyItemId(ap.getApplyItemId());
+        if (periodId != null) {
+            periodWorkflowService.assertNotArchivedOnly(periodId);
         }
         teacherScopeService.assertCanOperateStudentUser(ap.getStudentId().intValue());
         Integer handlerId = SecurityContextUtil.getCurrentUserId();

@@ -6,6 +6,7 @@ import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.mapper.EvaluationApprovalMapper;
 import com.project.evaluation.service.EvaluationApprovalService;
+import com.project.evaluation.service.PeriodWorkflowService;
 import com.project.evaluation.utils.SecurityContextUtil;
 import com.project.evaluation.vo.EvaluationApproval.EvaluationApplyItemVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,9 @@ public class EvaluationApprovalServiceImpl implements EvaluationApprovalService 
 
     @Autowired
     private EvaluationApprovalMapper evaluationApprovalMapper;
+
+    @Autowired
+    private PeriodWorkflowService periodWorkflowService;
 
     @Override
     public PageBean<EvaluationApplyItemVO> pageApplyItems(Integer pageNum, Integer pageSize,
@@ -40,6 +44,10 @@ public class EvaluationApprovalServiceImpl implements EvaluationApprovalService 
         if (applyItemId == null || applyItemId <= 0) {
             throw new IllegalArgumentException("非法申报项ID");
         }
+        Long periodId = evaluationApprovalMapper.findPeriodIdByApplyItemId(applyItemId);
+        if (periodId != null) {
+            periodWorkflowService.assertTeacherCanAudit(periodId);
+        }
         int affected = evaluationApprovalMapper.updateApplyItemStatus(applyItemId, "APPROVED");
         if (affected == 0) {
             throw new IllegalArgumentException("申报项不存在");
@@ -55,6 +63,10 @@ public class EvaluationApprovalServiceImpl implements EvaluationApprovalService 
         if (applyItemId == null || applyItemId <= 0) {
             throw new IllegalArgumentException("非法申报项ID");
         }
+        Long periodId = evaluationApprovalMapper.findPeriodIdByApplyItemId(applyItemId);
+        if (periodId != null) {
+            periodWorkflowService.assertTeacherCanAudit(periodId);
+        }
         int affected = evaluationApprovalMapper.updateApplyItemStatus(applyItemId, "REJECTED");
         if (affected == 0) {
             throw new IllegalArgumentException("申报项不存在");
@@ -69,6 +81,10 @@ public class EvaluationApprovalServiceImpl implements EvaluationApprovalService 
     public void reopenApplyItem(Long applyItemId) {
         if (applyItemId == null || applyItemId <= 0) {
             throw new IllegalArgumentException("非法申报项ID");
+        }
+        Long periodId = evaluationApprovalMapper.findPeriodIdByApplyItemId(applyItemId);
+        if (periodId != null) {
+            periodWorkflowService.assertNotArchivedOnly(periodId);
         }
         int affected = evaluationApprovalMapper.updateApplyItemStatus(applyItemId, "PENDING");
         if (affected == 0) {

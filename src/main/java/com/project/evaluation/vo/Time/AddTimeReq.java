@@ -2,6 +2,8 @@ package com.project.evaluation.vo.Time;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 /**
  * 添加周期请求体
  */
@@ -27,4 +29,11 @@ public class AddTimeReq {
      */
     private Integer status;
 
+    private Integer archived;
+    private LocalDateTime applicationStartTime;
+    private LocalDateTime applicationEndTime;
+    private LocalDateTime reviewEndTime;
+    private LocalDateTime publicNoticeStart;
+    private LocalDateTime publicNoticeEnd;
+    private LocalDateTime objectionEndTime;
 }

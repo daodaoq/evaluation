@@ -5,6 +5,7 @@ import com.github.pagehelper.PageHelper;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Time;
 import com.project.evaluation.mapper.TimeMapper;
+import com.project.evaluation.service.PeriodEventLogService;
 import com.project.evaluation.service.TimeService;
 import com.project.evaluation.vo.Time.AddTimeReq;
 import com.project.evaluation.vo.Time.UpdateTimeReq;
@@ -23,14 +24,20 @@ public class TimeServiceImpl implements TimeService {
     @Autowired
     private TimeMapper timeMapper;
 
+    @Autowired
+    private PeriodEventLogService periodEventLogService;
+
     /**
      * 添加周期
      * @param addTimeReq
      */
     @Override
     public void addTime(AddTimeReq addTimeReq) {
+        if (addTimeReq.getArchived() == null) {
+            addTimeReq.setArchived(0);
+        }
         timeMapper.addTime(addTimeReq);
-        log.info("添加成功：{}",addTimeReq);
+        log.info("添加成功：{}", addTimeReq);
     }
 
     /**
@@ -43,13 +50,12 @@ public class TimeServiceImpl implements TimeService {
             throw new IllegalArgumentException("非法周期ID");
         }
         int rows = timeMapper.deleteTime(id);
-        if(rows == 0)
-        {
-            log.warn("删除失败，周期id不存在：{}",id);
+        if (rows == 0) {
+            log.warn("删除失败，周期id不存在：{}", id);
             throw new IllegalStateException("周期不存在或已删除");
         }
-        log.info("删除周期成功： id={}",id);
-
+        periodEventLogService.log(id.longValue(), "PERIOD_DELETE", "删除综测周期");
+        log.info("删除周期成功： id={}", id);
     }
 
     /**
@@ -59,6 +65,7 @@ public class TimeServiceImpl implements TimeService {
     @Override
     public void updateTime(Integer id, UpdateTimeReq updateTimeReq) {
         timeMapper.updateTime(id, updateTimeReq);
+        periodEventLogService.log(id.longValue(), "PERIOD_UPDATE", "更新周期配置/阶段时间");
     }
 
     /**

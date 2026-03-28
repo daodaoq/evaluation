@@ -2,6 +2,8 @@ package com.project.evaluation.vo.Time;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 /**
  * 更新周期请求体
  */
@@ -28,4 +30,11 @@ public class UpdateTimeReq {
      */
     private Integer status;
 
+    private Integer archived;
+    private LocalDateTime applicationStartTime;
+    private LocalDateTime applicationEndTime;
+    private LocalDateTime reviewEndTime;
+    private LocalDateTime publicNoticeStart;
+    private LocalDateTime publicNoticeEnd;
+    private LocalDateTime objectionEndTime;
 }

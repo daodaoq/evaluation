@@ -19,9 +19,17 @@ public interface TimeMapper {
      * 添加
      * @param addTimeReq
      */
-    @Insert("INSERT INTO `evaluation_period`" +
-            "(period_name, start_time, end_time, status, create_time, update_time)"+
-    "VALUES(#{periodName}, #{startTime}, #{endTime}, #{status}, NOW(), NOW())")
+    @Insert("""
+            INSERT INTO evaluation_period
+            (period_name, start_time, end_time, status, archived,
+             application_start_time, application_end_time, review_end_time,
+             public_notice_start, public_notice_end, objection_end_time,
+             create_time, update_time)
+            VALUES (#{periodName}, #{startTime}, #{endTime}, #{status}, #{archived},
+             #{applicationStartTime}, #{applicationEndTime}, #{reviewEndTime},
+             #{publicNoticeStart}, #{publicNoticeEnd}, #{objectionEndTime},
+             NOW(), NOW())
+            """)
     void addTime(AddTimeReq addTimeReq);
 
     /**
@@ -35,12 +43,22 @@ public interface TimeMapper {
      * 更新周期信息
      * @param updateTimeReq
      */
-    @Update("UPDATE `evaluation_period` SET "+
-            "period_name = #{updateTimeReq.periodName},"+
-            "start_time = #{updateTimeReq.startTime},"+
-            "end_time = #{updateTimeReq.endTime},"+
-            "status = #{updateTimeReq.status}," +
-            "update_time = NOW() WHERE id = #{id}")
+    @Update("""
+            UPDATE evaluation_period SET
+            period_name = #{updateTimeReq.periodName},
+            start_time = #{updateTimeReq.startTime},
+            end_time = #{updateTimeReq.endTime},
+            status = #{updateTimeReq.status},
+            archived = #{updateTimeReq.archived},
+            application_start_time = #{updateTimeReq.applicationStartTime},
+            application_end_time = #{updateTimeReq.applicationEndTime},
+            review_end_time = #{updateTimeReq.reviewEndTime},
+            public_notice_start = #{updateTimeReq.publicNoticeStart},
+            public_notice_end = #{updateTimeReq.publicNoticeEnd},
+            objection_end_time = #{updateTimeReq.objectionEndTime},
+            update_time = NOW()
+            WHERE id = #{id}
+            """)
     void updateTime(Integer id, UpdateTimeReq updateTimeReq);
 
     /**

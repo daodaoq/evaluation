@@ -39,7 +39,10 @@ public interface StudentApplyMapper {
         """)
     List<RuleItemSimpleVO> listEnabledRuleItemsByPeriod(@Param("periodId") Long periodId);
 
-    @Select("SELECT COUNT(1) FROM evaluation_period WHERE id = #{periodId} AND status = 1")
+    @Select("""
+            SELECT COUNT(1) FROM evaluation_period
+            WHERE id = #{periodId} AND status = 1 AND IFNULL(archived, 0) = 0
+            """)
     int countActivePeriod(@Param("periodId") Long periodId);
 
     @Select("SELECT need_material FROM evaluation_rule_item WHERE id = #{ruleItemId} LIMIT 1")

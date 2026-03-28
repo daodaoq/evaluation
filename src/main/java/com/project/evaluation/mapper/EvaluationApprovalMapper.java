@@ -85,6 +85,13 @@ public interface EvaluationApprovalMapper {
     @Select("SELECT apply_id FROM evaluation_apply_item WHERE id = #{applyItemId}")
     Long findApplyIdByApplyItemId(@Param("applyItemId") Long applyItemId);
 
+    @Select("""
+            SELECT a.period_id FROM evaluation_apply_item ai
+            INNER JOIN evaluation_apply a ON ai.apply_id = a.id
+            WHERE ai.id = #{applyItemId}
+            """)
+    Long findPeriodIdByApplyItemId(@Param("applyItemId") Long applyItemId);
+
     @Select("SELECT COUNT(1) FROM evaluation_apply_item WHERE apply_id = #{applyId}")
     int countApplyItems(@Param("applyId") Long applyId);
 

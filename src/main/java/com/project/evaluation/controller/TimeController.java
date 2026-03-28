@@ -8,6 +8,7 @@ import com.project.evaluation.vo.Time.AddTimeReq;
 import com.project.evaluation.vo.Time.DeleteTimeReq;
 import com.project.evaluation.vo.Time.UpdateTimeReq;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,6 +27,8 @@ public class TimeController {
      * @return
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('sys:period:flow:menu')")
+    @CrossOrigin
     public Result addTime(@RequestBody AddTimeReq addTimeReq){
         Time time = timeService.findTimeByName(addTimeReq.getPeriodName());
         if(time == null) {
@@ -41,6 +44,8 @@ public class TimeController {
      * @return
      */
     @DeleteMapping
+    @PreAuthorize("hasAuthority('sys:period:flow:menu')")
+    @CrossOrigin
     public Result deleteTime(@RequestBody DeleteTimeReq deleteTimeReq) throws IllegalAccessException {
         timeService.deleteTime(deleteTimeReq.getId());
         return Result.success();
@@ -52,6 +57,8 @@ public class TimeController {
      * @return
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('sys:period:flow:menu')")
+    @CrossOrigin
     public Result updateTime(@RequestBody UpdateTimeReq updateTimeReq, @PathVariable("id") Integer id) {
         Time time = timeService.findTimeById(id);
         if (time != null) {
@@ -91,6 +98,8 @@ public class TimeController {
      * @return
      */
     @GetMapping("/list")
+    @PreAuthorize("hasAuthority('sys:period:flow:menu')")
+    @CrossOrigin
     public Result<PageBean<Time>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,

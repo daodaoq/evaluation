@@ -4,9 +4,14 @@ import com.alibaba.fastjson2.JSONObject;
 import com.project.evaluation.entity.EvaluationApply;
 import com.project.evaluation.entity.EvaluationApplyItem;
 import com.project.evaluation.entity.EvaluationApplyMaterial;
+import com.project.evaluation.entity.EvaluationPublicity;
 import com.project.evaluation.entity.MyUser;
 import com.project.evaluation.mapper.StudentApplyMapper;
+import com.project.evaluation.mapper.StudentPeriodConfirmMapper;
 import com.project.evaluation.mapper.UserMapper;
+import com.project.evaluation.service.EvaluationPublicityService;
+import com.project.evaluation.service.PeriodEventLogService;
+import com.project.evaluation.service.PeriodWorkflowService;
 import com.project.evaluation.service.StudentApplyService;
 import com.project.evaluation.utils.SecurityContextUtil;
 import com.project.evaluation.ws.ApprovalNotifyService;
@@ -14,6 +19,7 @@ import com.project.evaluation.vo.StudentApply.ApplyItemReq;
 import com.project.evaluation.vo.StudentApply.ApplyMaterialReq;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
 import com.project.evaluation.vo.StudentApply.RuleItemSimpleVO;
+import com.project.evaluation.vo.StudentApply.StudentPeriodWorkflowVO;
 import com.project.evaluation.vo.StudentApply.SubmitApplyReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,6 +43,18 @@ public class StudentApplyServiceImpl implements StudentApplyService {
 
     @Autowired
     private ApprovalNotifyService approvalNotifyService;
+
+    @Autowired
+    private PeriodWorkflowService periodWorkflowService;
+
+    @Autowired
+    private StudentPeriodConfirmMapper studentPeriodConfirmMapper;
+
+    @Autowired
+    private PeriodEventLogService periodEventLogService;
+
+    @Autowired
+    private EvaluationPublicityService evaluationPublicityService;
 
     @Override
     public List<RuleItemSimpleVO> listRuleItems(Long periodId) {
@@ -63,6 +81,7 @@ public class StudentApplyServiceImpl implements StudentApplyService {
         }
 
         Integer currentUserId = SecurityContextUtil.getCurrentUserId();
+        periodWorkflowService.assertStudentCanSubmit(req.getPeriodId(), currentUserId);
         EvaluationApply apply = new EvaluationApply();
         apply.setStudentId(currentUserId.longValue());
         apply.setPeriodId(req.getPeriodId());
@@ -101,6 +120,35 @@ public class StudentApplyServiceImpl implements StudentApplyService {
     public List<MyApplyVO> listMyApplyItems() {
         Integer currentUserId = SecurityContextUtil.getCurrentUserId();
         return studentApplyMapper.listMyApplyItems(currentUserId.longValue());
+    }
+
+    @Override
+    public StudentPeriodWorkflowVO getStudentPeriodWorkflow(Long periodId) {
+        if (periodId == null || periodId <= 0) {
+            throw new IllegalArgumentException("请选择有效综测周期");
+        }
+        Integer uid = SecurityContextUtil.getCurrentUserId();
+        return periodWorkflowService.buildStudentWorkflowView(periodId, uid);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void confirmPeriodNoObjection(Long periodId) {
+        if (periodId == null || periodId <= 0) {
+            throw new IllegalArgumentException("请选择有效综测周期");
+        }
+        Integer uid = SecurityContextUtil.getCurrentUserId();
+        periodWorkflowService.assertStudentCanConfirm(periodId);
+        if (studentPeriodConfirmMapper.exists(uid.longValue(), periodId)) {
+            throw new IllegalStateException("您已确认过本周期无异议");
+        }
+        studentPeriodConfirmMapper.insert(uid.longValue(), periodId);
+        periodEventLogService.log(periodId, "STUDENT_CONFIRM", "学生确认无异议 userId=" + uid);
+    }
+
+    @Override
+    public List<EvaluationPublicity> listActivePublicityForStudent(Long periodId) {
+        return evaluationPublicityService.listActiveForCurrentStudent(periodId);
     }
 
     private void validateAndInsertItem(Long applyId, ApplyItemReq itemReq) {
