@@ -5,11 +5,13 @@ import com.project.evaluation.entity.EvaluationApply;
 import com.project.evaluation.entity.EvaluationApplyItem;
 import com.project.evaluation.entity.EvaluationApplyMaterial;
 import com.project.evaluation.entity.EvaluationPublicity;
+import com.project.evaluation.entity.EvaluationSubmitTip;
 import com.project.evaluation.entity.MyUser;
 import com.project.evaluation.mapper.StudentApplyMapper;
 import com.project.evaluation.mapper.StudentPeriodConfirmMapper;
 import com.project.evaluation.mapper.UserMapper;
 import com.project.evaluation.service.EvaluationPublicityService;
+import com.project.evaluation.service.EvaluationSubmitTipService;
 import com.project.evaluation.service.PeriodEventLogService;
 import com.project.evaluation.service.PeriodWorkflowService;
 import com.project.evaluation.service.StudentApplyService;
@@ -56,6 +58,9 @@ public class StudentApplyServiceImpl implements StudentApplyService {
     @Autowired
     private EvaluationPublicityService evaluationPublicityService;
 
+    @Autowired
+    private EvaluationSubmitTipService evaluationSubmitTipService;
+
     @Override
     public List<RuleItemSimpleVO> listRuleItems(Long periodId) {
         if (periodId == null || periodId <= 0) {
@@ -73,8 +78,12 @@ public class StudentApplyServiceImpl implements StudentApplyService {
         if (req == null || req.getPeriodId() == null || req.getPeriodId() <= 0) {
             throw new IllegalArgumentException("请选择有效综测周期");
         }
-        if (CollectionUtils.isEmpty(req.getItems())) {
-            throw new IllegalArgumentException("请至少提交一个申报项");
+        boolean submitNone = Boolean.TRUE.equals(req.getSubmitNone());
+        if (CollectionUtils.isEmpty(req.getItems()) && !submitNone) {
+            throw new IllegalArgumentException("请至少提交一个申报项，或选择“提交无奖项”");
+        }
+        if (!CollectionUtils.isEmpty(req.getItems()) && submitNone) {
+            throw new IllegalArgumentException("“提交无奖项”与申报项不能同时提交");
         }
         if (studentApplyMapper.countActivePeriod(req.getPeriodId()) == 0) {
             throw new IllegalArgumentException("当前综测周期未启用");
@@ -89,20 +98,28 @@ public class StudentApplyServiceImpl implements StudentApplyService {
         apply.setTotalScore(BigDecimal.ZERO);
         studentApplyMapper.insertApply(apply);
 
-        for (ApplyItemReq itemReq : req.getItems()) {
-            validateAndInsertItem(apply.getId(), itemReq);
+        if (!CollectionUtils.isEmpty(req.getItems())) {
+            for (ApplyItemReq itemReq : req.getItems()) {
+                validateAndInsertItem(apply.getId(), itemReq);
+            }
         }
 
-        int pendingItemCount = req.getItems().size();
+        int pendingItemCount = req.getItems() == null ? 0 : req.getItems().size();
         MyUser stu = userMapper.selectById(currentUserId);
         String payload = buildNewApplyNotifyJson(apply.getId(), req.getPeriodId(), stu, pendingItemCount);
         Integer classId = stu != null ? stu.getClassId() : null;
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                approvalNotifyService.notifyNewApplyPendingReview(classId, payload);
-            }
-        });
+        if (pendingItemCount > 0) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    approvalNotifyService.notifyNewApplyPendingReview(classId, payload);
+                }
+            });
+        }
+        if (submitNone) {
+            periodEventLogService.log(req.getPeriodId(), "STUDENT_SUBMIT_NONE",
+                    "学生提交无奖项 userId=" + currentUserId + ", applyId=" + apply.getId());
+        }
     }
 
     private static String buildNewApplyNotifyJson(Long applyId, Long periodId, MyUser stu, int pendingItemCount) {
@@ -149,6 +166,11 @@ public class StudentApplyServiceImpl implements StudentApplyService {
     @Override
     public List<EvaluationPublicity> listActivePublicityForStudent(Long periodId) {
         return evaluationPublicityService.listActiveForCurrentStudent(periodId);
+    }
+
+    @Override
+    public List<EvaluationSubmitTip> listSubmitTipsForStudent(Long periodId, String sectionCode) {
+        return evaluationSubmitTipService.listForStudent(periodId, sectionCode);
     }
 
     private void validateAndInsertItem(Long applyId, ApplyItemReq itemReq) {

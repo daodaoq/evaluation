@@ -6,6 +6,7 @@ import com.project.evaluation.vo.RuleItem.UpdateRuleItemReq;
 import org.apache.ibatis.annotations.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface RuleItemMapper {
@@ -118,4 +119,57 @@ public interface RuleItemMapper {
      */
     @Select("SELECT * FROM `evaluation_rule_item`")
     List<RuleItem> paginationQuery();
+
+    @Select("""
+        <script>
+        SELECT ri.*
+        FROM evaluation_rule_item ri
+        INNER JOIN evaluation_rule r ON r.id = ri.rule_id
+        WHERE r.period_id = #{periodId}
+        <if test="moduleCode != null and moduleCode != ''">
+          AND UPPER(IFNULL(ri.module_code,'')) = UPPER(#{moduleCode})
+        </if>
+        <if test="itemCategory != null">
+          AND ri.item_category = #{itemCategory}
+        </if>
+        ORDER BY
+          CASE UPPER(IFNULL(ri.module_code,'')) WHEN 'MORAL' THEN 1 WHEN 'ACADEMIC' THEN 2 WHEN 'QUALITY' THEN 3 ELSE 9 END,
+          ri.item_category ASC,
+          ri.item_type ASC,
+          ri.id ASC
+        </script>
+        """)
+    List<RuleItem> listByPeriod(@Param("periodId") Integer periodId,
+                                @Param("moduleCode") String moduleCode,
+                                @Param("itemCategory") Integer itemCategory);
+
+    @Delete("DELETE FROM evaluation_rule_item WHERE rule_id = #{ruleId}")
+    int deleteByRuleId(@Param("ruleId") Integer ruleId);
+
+    @Insert("""
+        INSERT INTO evaluation_rule_item (
+            rule_id, item_name, item_type, item_category, level, base_score,
+            is_competition, need_material, status, score_mode, dedupe_group, coeff,
+            module_code, submodule_code, create_time, update_time
+        )
+        SELECT
+            #{targetRuleId}, item_name, item_type, item_category, level, base_score,
+            is_competition, need_material, status, score_mode, dedupe_group, coeff,
+            module_code, submodule_code, NOW(), NOW()
+        FROM evaluation_rule_item
+        WHERE rule_id = #{sourceRuleId}
+        """)
+    int copyByRuleId(@Param("sourceRuleId") Integer sourceRuleId, @Param("targetRuleId") Integer targetRuleId);
+
+    @Select("SELECT COUNT(1) FROM evaluation_rule_item WHERE rule_id = #{ruleId}")
+    int countByRuleId(@Param("ruleId") Integer ruleId);
+
+    @Select("""
+        SELECT item_category AS itemCategory, COUNT(1) AS cnt
+        FROM evaluation_rule_item
+        WHERE rule_id = #{ruleId}
+        GROUP BY item_category
+        ORDER BY item_category
+        """)
+    List<Map<String, Object>> countByCategory(@Param("ruleId") Integer ruleId);
 }

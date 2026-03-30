@@ -35,5 +35,46 @@ CREATE INDEX IF NOT EXISTS idx_apply_item_source_status
 CREATE INDEX IF NOT EXISTS idx_apply_student_period_status
     ON evaluation_apply (student_id, period_id, status);
 
+-- D) 异议表兼容修复（evaluation_objection）
+-- 说明：你当前库为旧结构（publicity_id/student_id/reason/reply/reviewer_id），
+--       新代码需要 period_id/student_user_id/content/handler_* 等字段。
+ALTER TABLE evaluation_objection
+    ADD COLUMN IF NOT EXISTS period_id BIGINT NULL COMMENT '综测周期ID',
+    ADD COLUMN IF NOT EXISTS student_user_id BIGINT NULL COMMENT '学生用户ID',
+    ADD COLUMN IF NOT EXISTS class_id INT NULL COMMENT '班级ID快照',
+    ADD COLUMN IF NOT EXISTS content VARCHAR(2000) NULL COMMENT '异议内容',
+    ADD COLUMN IF NOT EXISTS handler_user_id BIGINT NULL COMMENT '处理人用户ID',
+    ADD COLUMN IF NOT EXISTS handler_remark VARCHAR(500) NULL COMMENT '处理说明';
+
+-- 旧字段 -> 新字段的数据回填
+UPDATE evaluation_objection o
+LEFT JOIN evaluation_publicity p ON o.publicity_id = p.id
+SET
+    o.period_id = IFNULL(o.period_id, p.period_id),
+    o.student_user_id = IFNULL(o.student_user_id, o.student_id),
+    o.content = IFNULL(o.content, o.reason),
+    o.handler_user_id = IFNULL(o.handler_user_id, o.reviewer_id),
+    o.handler_remark = IFNULL(o.handler_remark, o.reply)
+WHERE
+    o.period_id IS NULL
+    OR o.student_user_id IS NULL
+    OR o.content IS NULL
+    OR o.handler_user_id IS NULL
+    OR o.handler_remark IS NULL;
+
+-- 班级快照补齐
+UPDATE evaluation_objection o
+LEFT JOIN sys_user u ON o.student_user_id = u.id
+SET o.class_id = IFNULL(o.class_id, u.class_id)
+WHERE o.class_id IS NULL;
+
+-- 索引补齐（供新 SQL 查询）
+CREATE INDEX IF NOT EXISTS idx_obj_period
+    ON evaluation_objection (period_id);
+CREATE INDEX IF NOT EXISTS idx_obj_student
+    ON evaluation_objection (student_user_id);
+CREATE INDEX IF NOT EXISTS idx_obj_status
+    ON evaluation_objection (status);
+
 COMMIT;
 

@@ -5,7 +5,9 @@ import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.RuleItem;
 import com.project.evaluation.service.RuleItemService;
 import com.project.evaluation.vo.RuleItem.AddRuleItemReq;
+import com.project.evaluation.vo.RuleItem.CopyRuleItemsReq;
 import com.project.evaluation.vo.RuleItem.DeleteRuleItemReq;
+import com.project.evaluation.vo.RuleItem.RuleCopyPreviewVO;
 import com.project.evaluation.vo.RuleItem.UpdateRuleItemReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -108,5 +110,34 @@ public class RuleItemController {
     ) {
         PageBean<RuleItem> pb = ruleItemService.paginationQuery(pageNum, pageSize);
         return Result.success(pb);
+    }
+
+    @GetMapping("/by-period")
+    @PreAuthorize("hasAuthority('sys:item:menu')")
+    @CrossOrigin
+    public Result<List<RuleItem>> listByPeriod(
+            @RequestParam Integer periodId,
+            @RequestParam(required = false) String moduleCode,
+            @RequestParam(required = false) Integer itemCategory
+    ) {
+        return Result.success(ruleItemService.listByPeriod(periodId, moduleCode, itemCategory));
+    }
+
+    @PostMapping("/copy-by-period")
+    @PreAuthorize("hasAuthority('sys:item:menu')")
+    @CrossOrigin
+    public Result<String> copyByPeriod(@RequestBody CopyRuleItemsReq req) {
+        int copied = ruleItemService.copyByPeriod(req.getSourcePeriodId(), req.getTargetPeriodId(), req.getOverwrite());
+        return Result.success("复制成功，共复制 " + copied + " 条规则项");
+    }
+
+    @GetMapping("/copy-preview")
+    @PreAuthorize("hasAuthority('sys:item:menu')")
+    @CrossOrigin
+    public Result<RuleCopyPreviewVO> previewCopyByPeriod(
+            @RequestParam Integer sourcePeriodId,
+            @RequestParam Integer targetPeriodId
+    ) {
+        return Result.success(ruleItemService.previewCopyByPeriod(sourcePeriodId, targetPeriodId));
     }
 }

@@ -23,6 +23,16 @@ public interface RuleMapper {
             """)
     void addRule(AddRuleReq addRuleReq);
 
+    @Insert("""
+            INSERT INTO `evaluation_rule` (
+                period_id, rule_name, version_code, moral_weight, academic_weight, quality_weight, status, create_time, update_time
+            ) VALUES (
+                #{periodId}, #{ruleName}, #{versionCode}, #{moralWeight}, #{academicWeight}, #{qualityWeight}, #{status}, NOW(), NOW()
+            )
+            """)
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
+    int insertRule(Rule rule);
+
     /**
      * 删除规则总览
      * @param id
@@ -62,6 +72,14 @@ public interface RuleMapper {
      */
     @Select("SELECT * FROM `evaluation_rule` WHERE id = #{id}")
     Rule findRuleById(Integer id);
+
+    @Select("""
+            SELECT * FROM `evaluation_rule`
+            WHERE period_id = #{periodId}
+            ORDER BY id DESC
+            LIMIT 1
+            """)
+    Rule findLatestByPeriodId(@Param("periodId") Integer periodId);
 
     /**
      * 批量获取规则总览列表

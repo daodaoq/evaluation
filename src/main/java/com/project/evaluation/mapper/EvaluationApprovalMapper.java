@@ -30,6 +30,9 @@ public interface EvaluationApprovalMapper {
             ai.rule_item_id AS ruleItemId,
             ri.item_name AS ruleItemName,
             ai.score AS score,
+            ar.auditor_id AS auditorId,
+            au.student_id AS auditorNo,
+            au.real_name AS auditorName,
             a.create_time AS applyCreateTime,
             ai.create_time AS itemCreateTime
         FROM evaluation_apply_item ai
@@ -38,6 +41,16 @@ public interface EvaluationApprovalMapper {
         LEFT JOIN sys_college c ON u.college_id = c.id
         LEFT JOIN sys_class cl ON u.class_id = cl.id
         LEFT JOIN evaluation_rule_item ri ON ai.rule_item_id = ri.id
+        LEFT JOIN (
+            SELECT t1.apply_item_id, t1.auditor_id
+            FROM evaluation_audit_record t1
+            INNER JOIN (
+                SELECT apply_item_id, MAX(create_time) AS mx
+                FROM evaluation_audit_record
+                GROUP BY apply_item_id
+            ) t2 ON t1.apply_item_id = t2.apply_item_id AND t1.create_time = t2.mx
+        ) ar ON ar.apply_item_id = ai.id
+        LEFT JOIN sys_user au ON au.id = ar.auditor_id
         <where>
             <if test='studentNo != null and studentNo != ""'>
                 AND u.student_id LIKE CONCAT('%', #{studentNo}, '%')

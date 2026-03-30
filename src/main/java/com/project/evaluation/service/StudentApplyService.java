@@ -1,6 +1,7 @@
 package com.project.evaluation.service;
 
 import com.project.evaluation.entity.EvaluationPublicity;
+import com.project.evaluation.entity.EvaluationSubmitTip;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
 import com.project.evaluation.vo.StudentApply.RuleItemSimpleVO;
 import com.project.evaluation.vo.StudentApply.StudentPeriodWorkflowVO;
@@ -20,4 +21,6 @@ public interface StudentApplyService {
     void confirmPeriodNoObjection(Long periodId);
 
     List<EvaluationPublicity> listActivePublicityForStudent(Long periodId);
+
+    List<EvaluationSubmitTip> listSubmitTipsForStudent(Long periodId, String sectionCode);
 }

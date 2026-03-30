@@ -3,18 +3,24 @@ package com.project.evaluation.service.impl;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.project.evaluation.entity.PageBean;
+import com.project.evaluation.entity.Rule;
 import com.project.evaluation.entity.RuleItem;
+import com.project.evaluation.mapper.RuleMapper;
 import com.project.evaluation.mapper.RuleItemMapper;
 import com.project.evaluation.service.RuleItemService;
 import com.project.evaluation.vo.RuleItem.AddRuleItemReq;
+import com.project.evaluation.vo.RuleItem.RuleCopyPreviewVO;
 import com.project.evaluation.vo.RuleItem.UpdateRuleItemReq;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -22,6 +28,9 @@ public class RuleItemServiceImpl implements RuleItemService {
 
     @Autowired
     private RuleItemMapper ruleItemMapper;
+
+    @Autowired
+    private RuleMapper ruleMapper;
 
     /**
      * 添加规则项
@@ -132,5 +141,72 @@ public class RuleItemServiceImpl implements RuleItemService {
         pb.setTotal(u.getTotal());
         pb.setItems(u.getResult());
         return pb;
+    }
+
+    @Override
+    public List<RuleItem> listByPeriod(Integer periodId, String moduleCode, Integer itemCategory) {
+        if (periodId == null || periodId <= 0) {
+            throw new IllegalArgumentException("请选择学期");
+        }
+        return ruleItemMapper.listByPeriod(periodId, moduleCode, itemCategory);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int copyByPeriod(Integer sourcePeriodId, Integer targetPeriodId, Boolean overwrite) {
+        if (sourcePeriodId == null || sourcePeriodId <= 0 || targetPeriodId == null || targetPeriodId <= 0) {
+            throw new IllegalArgumentException("请选择有效学期");
+        }
+        if (sourcePeriodId.equals(targetPeriodId)) {
+            throw new IllegalArgumentException("来源学期与目标学期不能相同");
+        }
+        Rule sourceRule = ruleMapper.findLatestByPeriodId(sourcePeriodId);
+        if (sourceRule == null || sourceRule.getId() == null) {
+            throw new IllegalStateException("来源学期暂无规则可复制");
+        }
+        Rule targetRule = ruleMapper.findLatestByPeriodId(targetPeriodId);
+        if (targetRule == null || targetRule.getId() == null) {
+            targetRule = new Rule();
+            targetRule.setPeriodId(targetPeriodId);
+            targetRule.setRuleName(sourceRule.getRuleName() + "（复制）");
+            targetRule.setVersionCode(StringUtils.hasText(sourceRule.getVersionCode()) ? sourceRule.getVersionCode() : "v1");
+            targetRule.setStatus(1);
+            targetRule.setMoralWeight(sourceRule.getMoralWeight());
+            targetRule.setAcademicWeight(sourceRule.getAcademicWeight());
+            targetRule.setQualityWeight(sourceRule.getQualityWeight());
+            ruleMapper.insertRule(targetRule);
+        }
+        if (Boolean.TRUE.equals(overwrite)) {
+            ruleItemMapper.deleteByRuleId(targetRule.getId());
+        }
+        return ruleItemMapper.copyByRuleId(sourceRule.getId(), targetRule.getId());
+    }
+
+    @Override
+    public RuleCopyPreviewVO previewCopyByPeriod(Integer sourcePeriodId, Integer targetPeriodId) {
+        if (sourcePeriodId == null || sourcePeriodId <= 0 || targetPeriodId == null || targetPeriodId <= 0) {
+            throw new IllegalArgumentException("请选择有效学期");
+        }
+        Rule sourceRule = ruleMapper.findLatestByPeriodId(sourcePeriodId);
+        Rule targetRule = ruleMapper.findLatestByPeriodId(targetPeriodId);
+        if (sourceRule == null || sourceRule.getId() == null) {
+            throw new IllegalStateException("来源学期暂无规则可复制");
+        }
+        int sourceTotal = ruleItemMapper.countByRuleId(sourceRule.getId());
+        int targetExistingTotal = (targetRule == null || targetRule.getId() == null) ? 0 : ruleItemMapper.countByRuleId(targetRule.getId());
+        List<Map<String, Object>> rows = ruleItemMapper.countByCategory(sourceRule.getId());
+        List<RuleCopyPreviewVO.CategoryCount> categoryCounts = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            Integer category = row.get("itemCategory") == null ? -1 : Integer.parseInt(String.valueOf(row.get("itemCategory")));
+            Integer cnt = row.get("cnt") == null ? 0 : Integer.parseInt(String.valueOf(row.get("cnt")));
+            categoryCounts.add(new RuleCopyPreviewVO.CategoryCount(category, cnt));
+        }
+        RuleCopyPreviewVO vo = new RuleCopyPreviewVO();
+        vo.setSourcePeriodId(sourcePeriodId);
+        vo.setTargetPeriodId(targetPeriodId);
+        vo.setSourceTotal(sourceTotal);
+        vo.setTargetExistingTotal(targetExistingTotal);
+        vo.setCategoryCounts(categoryCounts);
+        return vo;
     }
 }

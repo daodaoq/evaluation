@@ -22,6 +22,9 @@ public class EvaluationApplyItemVO {
     private Long ruleItemId;
     private String ruleItemName;
     private BigDecimal score;
+    private Long auditorId;
+    private String auditorNo;
+    private String auditorName;
     private LocalDateTime applyCreateTime;
     private LocalDateTime itemCreateTime;
 }

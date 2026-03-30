@@ -117,16 +117,17 @@ public class UserServiceImpl implements UserService {
             boolean hasStudentRole = userMapper.countUserRole(uid, STUDENT_ROLE_ID) > 0;
             boolean hasTeacherRole = userMapper.countUserRole(uid, TEACHER_ROLE_ID) > 0;
             boolean hasAdminRole = userMapper.countUserRole(uid, ADMIN_ROLE_ID) > 0;
-            if (hasStudentRole && !hasTeacherRole && !hasAdminRole) {
-                return Result.error("您的权限不足");
+            if (!hasStudentRole && !hasTeacherRole && !hasAdminRole) {
+                return Result.error("账号未分配角色，无法登录");
             }
             String jwtKey = "user:" + myUser.getId();
             String token = JwtUtil.createToken(jwtKey, LOGIN_TOKEN_TTL_MS);
+            long expireAt = System.currentTimeMillis() + LOGIN_TOKEN_TTL_MS;
 
             redisTemplate.opsForValue().set(jwtKey, principal, LOGIN_TOKEN_TTL_MS, TimeUnit.MILLISECONDS);
 
             LoginUserVO userVo = toLoginUserVO(myUser);
-            return Result.success(new LoginResp(token, userVo));
+            return Result.success(new LoginResp(token, expireAt, userVo));
         } catch (BadCredentialsException e) {
             log.debug("登录失败：账号或密码错误, user={}", username);
             return Result.error("账号或密码错误");

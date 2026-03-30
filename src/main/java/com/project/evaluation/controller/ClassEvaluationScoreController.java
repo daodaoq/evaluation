@@ -4,6 +4,7 @@ import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.ClassEvaluationScoreService;
 import com.project.evaluation.vo.ClassScore.ClassEvaluationScoreRowVO;
+import com.project.evaluation.vo.ClassScore.ClassUnsubmittedRowVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -34,8 +35,9 @@ public class ClassEvaluationScoreController {
             @RequestParam Integer pageSize,
             @RequestParam Long periodId,
             @RequestParam(required = false) Long classId,
-            @RequestParam(required = false) String studentNo) {
-        return Result.success(classEvaluationScoreService.page(pageNum, pageSize, periodId, classId, studentNo));
+            @RequestParam(required = false) String studentNo,
+            @RequestParam(required = false) String totalSortOrder) {
+        return Result.success(classEvaluationScoreService.page(pageNum, pageSize, periodId, classId, studentNo, totalSortOrder));
     }
 
     @GetMapping("/export")
@@ -44,12 +46,41 @@ public class ClassEvaluationScoreController {
     public ResponseEntity<byte[]> export(
             @RequestParam Long periodId,
             @RequestParam(required = false) Long classId,
-            @RequestParam(required = false) String studentNo) {
-        byte[] data = classEvaluationScoreService.exportExcel(periodId, classId, studentNo);
+            @RequestParam(required = false) String studentNo,
+            @RequestParam(required = false) String totalSortOrder) {
+        byte[] data = classEvaluationScoreService.exportExcel(periodId, classId, studentNo, totalSortOrder);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
         String encoded = URLEncoder.encode("班级综测成绩.xlsx", StandardCharsets.UTF_8).replace("+", "%20");
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded);
+        return new ResponseEntity<>(data, headers, HttpStatus.OK);
+    }
+
+    @GetMapping("/unsubmitted/list")
+    @PreAuthorize("hasAuthority('sys:class-score:menu')")
+    @CrossOrigin
+    public Result<PageBean<ClassUnsubmittedRowVO>> unsubmittedList(
+            @RequestParam Integer pageNum,
+            @RequestParam Integer pageSize,
+            @RequestParam Long periodId,
+            @RequestParam(required = false) Long classId,
+            @RequestParam(required = false) String studentNo) {
+        return Result.success(classEvaluationScoreService.pageUnsubmitted(pageNum, pageSize, periodId, classId, studentNo));
+    }
+
+    @GetMapping("/unsubmitted/export")
+    @PreAuthorize("hasAuthority('sys:class-score:menu')")
+    @CrossOrigin
+    public ResponseEntity<byte[]> exportUnsubmitted(
+            @RequestParam Long periodId,
+            @RequestParam(required = false) Long classId,
+            @RequestParam(required = false) String studentNo) {
+        byte[] data = classEvaluationScoreService.exportUnsubmittedExcel(periodId, classId, studentNo);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        String encoded = URLEncoder.encode("未提交名单.xlsx", StandardCharsets.UTF_8).replace("+", "%20");
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded);
         return new ResponseEntity<>(data, headers, HttpStatus.OK);
     }

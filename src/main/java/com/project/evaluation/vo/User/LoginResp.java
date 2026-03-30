@@ -13,5 +13,7 @@ import lombok.NoArgsConstructor;
 public class LoginResp {
 
     private String token;
+    /** token 过期时间戳（毫秒） */
+    private Long expireAt;
     private LoginUserVO user;
 }

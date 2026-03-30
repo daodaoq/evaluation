@@ -2,9 +2,6 @@ package com.project.evaluation.service.impl;
 
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
-import com.github.pagehelper.Page;
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.mapper.AcademicScoreMapper;
 import com.project.evaluation.mapper.ClassEvaluationScoreMapper;
@@ -14,6 +11,7 @@ import com.project.evaluation.utils.ComprehensiveScoreCalculator;
 import com.project.evaluation.vo.ClassScore.ApprovedRuleItemScoreRow;
 import com.project.evaluation.vo.ClassScore.ClassEvaluationScoreRowVO;
 import com.project.evaluation.vo.ClassScore.ClassEvaluationStudentRow;
+import com.project.evaluation.vo.ClassScore.ClassUnsubmittedRowVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -23,6 +21,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -41,7 +40,7 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
 
     @Override
     public PageBean<ClassEvaluationScoreRowVO> page(Integer pageNum, Integer pageSize,
-                                                    Long periodId, Long classId, String studentNo) {
+                                                    Long periodId, Long classId, String studentNo, String totalSortOrder) {
         if (periodId == null || periodId <= 0) {
             throw new IllegalArgumentException("请选择综测周期");
         }
@@ -53,23 +52,27 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
             return new PageBean<>(0L, Collections.emptyList());
         }
 
-        List<ClassEvaluationStudentRow> studs;
-        PageInfo<ClassEvaluationStudentRow> pageInfo;
-        try (Page<Object> ignored = PageHelper.startPage(pageNum, pageSize)) {
-            studs = classEvaluationScoreMapper.listStudentsForScore(
-                    periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
-            pageInfo = new PageInfo<>(studs);
-        }
+        int safePageNum = pageNum == null || pageNum < 1 ? 1 : pageNum;
+        int safePageSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        List<ClassEvaluationStudentRow> studs = classEvaluationScoreMapper.listStudentsForScore(
+                periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
 
         List<Long> userIds = studs.stream().map(ClassEvaluationStudentRow::getUserId).toList();
         Map<Long, List<ApprovedRuleItemScoreRow>> itemMap = loadItemsGrouped(periodId, userIds, scope);
 
         List<ClassEvaluationScoreRowVO> vos = buildVos(studs, itemMap);
-        return new PageBean<>(pageInfo.getTotal(), vos);
+        applyTotalSort(vos, totalSortOrder);
+        long total = vos.size();
+        int from = (safePageNum - 1) * safePageSize;
+        if (from >= vos.size()) {
+            return new PageBean<>(total, Collections.emptyList());
+        }
+        int to = Math.min(from + safePageSize, vos.size());
+        return new PageBean<>(total, vos.subList(from, to));
     }
 
     @Override
-    public byte[] exportExcel(Long periodId, Long classId, String studentNo) {
+    public byte[] exportExcel(Long periodId, Long classId, String studentNo, String totalSortOrder) {
         if (periodId == null || periodId <= 0) {
             throw new IllegalArgumentException("请选择综测周期");
         }
@@ -86,7 +89,52 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
         List<Long> userIds = studs.stream().map(ClassEvaluationStudentRow::getUserId).toList();
         Map<Long, List<ApprovedRuleItemScoreRow>> itemMap = loadItemsGrouped(periodId, userIds, scope);
         List<ClassEvaluationScoreRowVO> vos = buildVos(studs, itemMap);
+        applyTotalSort(vos, totalSortOrder);
         return toExcelBytes(vos);
+    }
+
+    @Override
+    public PageBean<ClassUnsubmittedRowVO> pageUnsubmitted(Integer pageNum, Integer pageSize,
+                                                           Long periodId, Long classId, String studentNo) {
+        if (periodId == null || periodId <= 0) throw new IllegalArgumentException("请选择综测周期");
+        if (academicScoreMapper.countPeriod(periodId) == 0) throw new IllegalArgumentException("综测周期不存在");
+        Scope scope = resolveScope(classId);
+        if (scope.emptyResult()) return new PageBean<>(0L, Collections.emptyList());
+        int safePageNum = pageNum == null || pageNum < 1 ? 1 : pageNum;
+        int safePageSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
+        List<ClassUnsubmittedRowVO> rows = classEvaluationScoreMapper.listUnsubmittedStudents(
+                periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
+        long total = rows.size();
+        int from = (safePageNum - 1) * safePageSize;
+        if (from >= rows.size()) return new PageBean<>(total, Collections.emptyList());
+        int to = Math.min(from + safePageSize, rows.size());
+        return new PageBean<>(total, rows.subList(from, to));
+    }
+
+    @Override
+    public byte[] exportUnsubmittedExcel(Long periodId, Long classId, String studentNo) {
+        if (periodId == null || periodId <= 0) throw new IllegalArgumentException("请选择综测周期");
+        if (academicScoreMapper.countPeriod(periodId) == 0) throw new IllegalArgumentException("综测周期不存在");
+        Scope scope = resolveScope(classId);
+        if (scope.emptyResult()) return toUnsubmittedExcelBytes(Collections.emptyList());
+        List<ClassUnsubmittedRowVO> rows = classEvaluationScoreMapper.listUnsubmittedStudents(
+                periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
+        return toUnsubmittedExcelBytes(rows);
+    }
+
+    private static void applyTotalSort(List<ClassEvaluationScoreRowVO> vos, String totalSortOrder) {
+        if (vos == null || vos.size() <= 1 || totalSortOrder == null) {
+            return;
+        }
+        String order = totalSortOrder.trim().toLowerCase();
+        Comparator<ClassEvaluationScoreRowVO> cmp = Comparator.comparing(
+                v -> v.getTotalScore() == null ? BigDecimal.ZERO : v.getTotalScore()
+        );
+        if ("asc".equals(order)) {
+            vos.sort(cmp.thenComparing(v -> blankIfNull(v.getStudentNo())));
+        } else if ("desc".equals(order)) {
+            vos.sort(cmp.reversed().thenComparing(v -> blankIfNull(v.getStudentNo())));
+        }
     }
 
     private static byte[] toExcelBytes(List<ClassEvaluationScoreRowVO> vos) {
@@ -115,6 +163,24 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
             return out.toByteArray();
         } catch (Exception e) {
             throw new IllegalStateException("导出 Excel 失败", e);
+        }
+    }
+
+    private static byte[] toUnsubmittedExcelBytes(List<ClassUnsubmittedRowVO> rows) {
+        try (ExcelWriter writer = ExcelUtil.getWriter(true);
+             ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            writer.writeRow(List.of("学号", "姓名", "班级"));
+            for (ClassUnsubmittedRowVO r : rows) {
+                writer.writeRow(Arrays.asList(
+                        blankIfNull(r.getStudentNo()),
+                        blankIfNull(r.getStudentName()),
+                        blankIfNull(r.getClassName())
+                ));
+            }
+            writer.flush(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new IllegalStateException("导出未提交名单失败", e);
         }
     }
 

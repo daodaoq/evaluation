@@ -1,6 +1,7 @@
 package com.project.evaluation.controller;
 
 import com.project.evaluation.entity.EvaluationPublicity;
+import com.project.evaluation.entity.EvaluationSubmitTip;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.ApplyAppealService;
 import com.project.evaluation.service.EvaluationObjectionService;
@@ -101,6 +102,17 @@ public class StudentApplyController {
     @CrossOrigin
     public Result<List<EvaluationPublicity>> activePublicity(@RequestParam Long periodId) {
         return Result.success(studentApplyService.listActivePublicityForStudent(periodId));
+    }
+
+    /**
+     * 学生端：分类申报动态提示（教师/管理员维护）
+     */
+    @GetMapping("/tips")
+    @PreAuthorize("hasAuthority('sys:student:menu')")
+    @CrossOrigin
+    public Result<List<EvaluationSubmitTip>> tips(@RequestParam Long periodId,
+                                                  @RequestParam(required = false) String sectionCode) {
+        return Result.success(studentApplyService.listSubmitTipsForStudent(periodId, sectionCode));
     }
 
     /**
