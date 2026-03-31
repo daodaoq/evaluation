@@ -11,12 +11,13 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3  # 拉取代码
+      uses: actions/checkout@v3
 
     - name: Set up JDK 21
       uses: actions/setup-java@v2
       with:
         java-version: '21'  # 使用 Java 21
+        distribution: 'adoptopenjdk'  # 设置 JDK 分发方式为 AdoptOpenJDK
 
     - name: Install dependencies and build Java project
       run: |
@@ -38,10 +39,13 @@ jobs:
 
         # SSH 到云服务器并执行部署步骤
         ssh $USERNAME@$SERVER_IP << 'EOF'
-          cd /opt/evaluation
+          cd /opt/evaluation  # 进入正确的项目目录
           git pull origin main  # 拉取最新代码
           mvn clean install -DskipTests  # 构建项目
-          # 使用 java -jar 启动服务
-          pkill -f 'evaluation-1.0-SNAPSHOT.jar' || true  # 杀掉旧的进程（如果有）
-          nohup java -jar /opt/evaluation/target/evaluation-1.0-SNAPSHOT.jar &  # 启动新的后端服务
+          
+          # 停止旧的进程（如果正在运行）
+          pkill -f 'evaluation-1.0-SNAPSHOT.jar' || true
+          
+          # 启动新的后端应用
+          nohup java -jar /opt/evaluation/target/evaluation-1.0-SNAPSHOT.jar > /opt/evaluation/logs/app.log 2>&1 &
         EOF
