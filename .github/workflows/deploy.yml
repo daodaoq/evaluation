@@ -20,7 +20,7 @@ jobs:
 
     - name: Install dependencies and build Java project
       run: |
-        cd backend
+        cd evaluation
         mvn clean install -DskipTests  # 构建项目，不运行单元测试（如果你需要可以去掉 -DskipTests）
 
     - name: Deploy to Server
@@ -38,8 +38,10 @@ jobs:
 
         # SSH 到云服务器并执行部署步骤
         ssh $USERNAME@$SERVER_IP << 'EOF'
-          cd /path/to/backend
+          cd /opt/evaluation
           git pull origin main  # 拉取最新代码
           mvn clean install -DskipTests  # 构建项目
-          pm2 restart backend  # 重启后端服务（假设使用 pm2 管理）
+          # 使用 java -jar 启动服务
+          pkill -f 'evaluation-1.0-SNAPSHOT.jar' || true  # 杀掉旧的进程（如果有）
+          nohup java -jar /opt/evaluation/target/evaluation-1.0-SNAPSHOT.jar &  # 启动新的后端服务
         EOF
