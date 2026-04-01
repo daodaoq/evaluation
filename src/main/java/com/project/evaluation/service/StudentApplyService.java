@@ -5,6 +5,7 @@ import com.project.evaluation.entity.EvaluationSubmitTip;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
 import com.project.evaluation.vo.StudentApply.RuleItemSimpleVO;
 import com.project.evaluation.vo.StudentApply.StudentPeriodWorkflowVO;
+import com.project.evaluation.vo.StudentApply.StudentSectionScoreVO;
 import com.project.evaluation.vo.StudentApply.SubmitApplyReq;
 
 import java.util.List;
@@ -23,4 +24,7 @@ public interface StudentApplyService {
     List<EvaluationPublicity> listActivePublicityForStudent(Long periodId);
 
     List<EvaluationSubmitTip> listSubmitTipsForStudent(Long periodId, String sectionCode);
+
+    /** 当前周期：各综测大类已得分（申报仅统计已通过；智育为管理端录入） */
+    List<StudentSectionScoreVO> listMySectionScores(Long periodId);
 }

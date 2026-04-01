@@ -1,5 +1,6 @@
 package com.project.evaluation.mapper;
 
+import com.project.evaluation.vo.EvaluationApproval.ApplyItemScoringSnapshot;
 import com.project.evaluation.vo.EvaluationApproval.EvaluationApplyItemVO;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -7,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Mapper
@@ -84,6 +86,25 @@ public interface EvaluationApprovalMapper {
 
     @Update("UPDATE evaluation_apply_item SET status = #{status} WHERE id = #{applyItemId}")
     int updateApplyItemStatus(@Param("applyItemId") Long applyItemId, @Param("status") String status);
+
+    @Update("UPDATE evaluation_apply_item SET status = #{status}, score = #{score} WHERE id = #{applyItemId}")
+    int updateApplyItemStatusAndScore(
+            @Param("applyItemId") Long applyItemId,
+            @Param("status") String status,
+            @Param("score") BigDecimal score);
+
+    @Select("""
+            SELECT ai.source_type AS sourceType,
+                   ai.rule_item_id AS ruleItemId,
+                   ri.base_score AS baseScore,
+                   IFNULL(ri.coeff, 1) AS coeff,
+                   ri.score_mode AS scoreMode
+            FROM evaluation_apply_item ai
+            LEFT JOIN evaluation_rule_item ri ON ai.rule_item_id = ri.id
+            WHERE ai.id = #{applyItemId}
+            LIMIT 1
+            """)
+    ApplyItemScoringSnapshot selectScoringSnapshot(@Param("applyItemId") Long applyItemId);
 
     @Insert("""
         INSERT INTO evaluation_audit_record

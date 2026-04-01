@@ -7,12 +7,15 @@ import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.mapper.EvaluationApprovalMapper;
 import com.project.evaluation.service.EvaluationApprovalService;
 import com.project.evaluation.service.PeriodWorkflowService;
+import com.project.evaluation.utils.ApplyItemScoreUtil;
 import com.project.evaluation.utils.SecurityContextUtil;
+import com.project.evaluation.vo.EvaluationApproval.ApplyItemScoringSnapshot;
 import com.project.evaluation.vo.EvaluationApproval.EvaluationApplyItemVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -48,7 +51,14 @@ public class EvaluationApprovalServiceImpl implements EvaluationApprovalService 
         if (periodId != null) {
             periodWorkflowService.assertTeacherCanAudit(periodId);
         }
-        int affected = evaluationApprovalMapper.updateApplyItemStatus(applyItemId, "APPROVED");
+        ApplyItemScoringSnapshot snap = evaluationApprovalMapper.selectScoringSnapshot(applyItemId);
+        BigDecimal score = ApplyItemScoreUtil.effectiveScore(
+                BigDecimal.ZERO,
+                snap != null ? snap.getSourceType() : null,
+                snap != null ? snap.getBaseScore() : null,
+                snap != null ? snap.getCoeff() : null,
+                snap != null ? snap.getScoreMode() : null);
+        int affected = evaluationApprovalMapper.updateApplyItemStatusAndScore(applyItemId, "APPROVED", score);
         if (affected == 0) {
             throw new IllegalArgumentException("申报项不存在");
         }

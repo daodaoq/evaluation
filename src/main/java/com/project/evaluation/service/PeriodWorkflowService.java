@@ -19,6 +19,7 @@ import java.time.format.DateTimeParseException;
 public class PeriodWorkflowService {
 
     private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter SCHEDULE_CN = DateTimeFormatter.ofPattern("yyyy年M月d日 HH:mm");
 
     @Autowired
     private TimeMapper timeMapper;
@@ -239,7 +240,38 @@ public class PeriodWorkflowService {
             vo.setObjectionHint("异议期内");
         }
 
+        fillScheduleTimeTexts(vo, t);
         return vo;
+    }
+
+    /** 学生端展示用：周期配置中的各阶段时间（中文） */
+    private void fillScheduleTimeTexts(StudentPeriodWorkflowVO vo, Time t) {
+        LocalDateTime appS = effectiveApplicationStart(t);
+        LocalDateTime appE = effectiveApplicationEnd(t);
+        vo.setApplicationWindowTimeText(formatScheduleRange(appS, appE));
+        vo.setReviewDeadlineTimeText(formatSchedulePoint(t.getReviewEndTime()));
+        vo.setPublicNoticeTimeText(formatScheduleRange(t.getPublicNoticeStart(), t.getPublicNoticeEnd()));
+        LocalDateTime objEnd = t.getObjectionEndTime() != null ? t.getObjectionEndTime() : t.getPublicNoticeEnd();
+        vo.setObjectionDeadlineTimeText(formatSchedulePoint(objEnd));
+    }
+
+    private static String formatSchedulePoint(LocalDateTime dt) {
+        return dt == null ? null : dt.format(SCHEDULE_CN);
+    }
+
+    private static String formatScheduleRange(LocalDateTime start, LocalDateTime end) {
+        if (start == null && end == null) {
+            return null;
+        }
+        String a = formatSchedulePoint(start);
+        String b = formatSchedulePoint(end);
+        if (a != null && b != null) {
+            return a + " ～ " + b;
+        }
+        if (a != null) {
+            return a + " 起";
+        }
+        return "至 " + b;
     }
 
     public static LocalDateTime parseLegacyDateTime(String s) {

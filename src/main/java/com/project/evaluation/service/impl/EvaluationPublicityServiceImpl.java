@@ -2,6 +2,7 @@ package com.project.evaluation.service.impl;
 
 import com.project.evaluation.entity.EvaluationPublicity;
 import com.project.evaluation.entity.MyUser;
+import com.project.evaluation.entity.Time;
 import com.project.evaluation.mapper.EvaluationPublicityMapper;
 import com.project.evaluation.mapper.UserMapper;
 import com.project.evaluation.service.EvaluationPublicityService;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -115,10 +118,31 @@ public class EvaluationPublicityServiceImpl implements EvaluationPublicityServic
         if (periodId == null || periodId <= 0) {
             throw new IllegalArgumentException("请选择有效综测周期");
         }
-        periodWorkflowService.requirePeriod(periodId);
+        Time period = periodWorkflowService.requirePeriod(periodId);
         Integer uid = SecurityContextUtil.getCurrentUserId();
         MyUser u = userMapper.selectById(uid);
         Integer classId = u != null ? u.getClassId() : null;
-        return evaluationPublicityMapper.listActiveForStudent(periodId, classId);
+        List<EvaluationPublicity> fromTable = evaluationPublicityMapper.listActiveForStudent(periodId, classId);
+        if (!fromTable.isEmpty()) {
+            return fromTable;
+        }
+        // 未在「公示」中维护明细记录时，若当前时间在周期配置的公示窗口内，则按周期时间回退展示（与流程文案一致）
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime pubS = period.getPublicNoticeStart();
+        LocalDateTime pubE = period.getPublicNoticeEnd();
+        if (pubS == null || pubE == null) {
+            return fromTable;
+        }
+        if (now.isBefore(pubS) || now.isAfter(pubE)) {
+            return fromTable;
+        }
+        EvaluationPublicity fallback = new EvaluationPublicity();
+        fallback.setId(null);
+        fallback.setPeriodId(periodId);
+        fallback.setClassId(null);
+        fallback.setStartTime(pubS);
+        fallback.setEndTime(pubE);
+        fallback.setStatus("OPEN");
+        return Collections.singletonList(fallback);
     }
 }

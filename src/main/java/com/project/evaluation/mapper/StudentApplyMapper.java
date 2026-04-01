@@ -5,6 +5,7 @@ import com.project.evaluation.entity.EvaluationApplyItem;
 import com.project.evaluation.entity.EvaluationApplyMaterial;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
 import com.project.evaluation.vo.StudentApply.RuleItemSimpleVO;
+import com.project.evaluation.vo.StudentApply.StudentApplyApprovedScoreRow;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
@@ -108,4 +109,23 @@ public interface StudentApplyMapper {
         ORDER BY a.id DESC, ai.id DESC
         """)
     List<MyApplyVO> listMyApplyItems(@Param("studentUserId") Long studentUserId);
+
+    @Select("""
+            SELECT IFNULL(ai.score, 0) AS score,
+                   ai.source_type AS sourceType,
+                   UPPER(IFNULL(ri.module_code, '')) AS moduleCode,
+                   UPPER(IFNULL(ri.submodule_code, '')) AS submoduleCode,
+                   ri.base_score AS baseScore,
+                   IFNULL(ri.coeff, 1) AS coeff,
+                   ri.score_mode AS scoreMode
+            FROM evaluation_apply a
+            INNER JOIN evaluation_apply_item ai ON ai.apply_id = a.id
+            LEFT JOIN evaluation_rule_item ri ON ai.rule_item_id = ri.id
+            WHERE a.student_id = #{studentUserId}
+              AND a.period_id = #{periodId}
+              AND ai.status = 'APPROVED'
+            """)
+    List<StudentApplyApprovedScoreRow> listApprovedScoresForPeriod(
+            @Param("studentUserId") Long studentUserId,
+            @Param("periodId") Long periodId);
 }

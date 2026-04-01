@@ -10,6 +10,7 @@ import com.project.evaluation.vo.ApplyAppeal.SubmitAppealReq;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
 import com.project.evaluation.vo.StudentApply.RuleItemSimpleVO;
 import com.project.evaluation.vo.StudentApply.StudentPeriodWorkflowVO;
+import com.project.evaluation.vo.StudentApply.StudentSectionScoreVO;
 import com.project.evaluation.vo.StudentApply.SubmitApplyReq;
 import com.project.evaluation.vo.StudentApply.SubmitObjectionReq;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +61,16 @@ public class StudentApplyController {
     @CrossOrigin
     public Result<List<MyApplyVO>> mine() {
         return Result.success(studentApplyService.listMyApplyItems());
+    }
+
+    /**
+     * 学生端：当前周期各综测大类已得分（申报项仅统计已通过审核）
+     */
+    @GetMapping("/section-scores")
+    @PreAuthorize("hasAuthority('sys:student:menu')")
+    @CrossOrigin
+    public Result<List<StudentSectionScoreVO>> sectionScores(@RequestParam Long periodId) {
+        return Result.success(studentApplyService.listMySectionScores(periodId));
     }
 
     /**

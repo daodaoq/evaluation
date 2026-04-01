@@ -10,18 +10,23 @@ import com.project.evaluation.entity.MyUser;
 import com.project.evaluation.mapper.StudentApplyMapper;
 import com.project.evaluation.mapper.StudentPeriodConfirmMapper;
 import com.project.evaluation.mapper.UserMapper;
+import com.project.evaluation.service.AcademicScoreService;
 import com.project.evaluation.service.EvaluationPublicityService;
 import com.project.evaluation.service.EvaluationSubmitTipService;
 import com.project.evaluation.service.PeriodEventLogService;
 import com.project.evaluation.service.PeriodWorkflowService;
 import com.project.evaluation.service.StudentApplyService;
+import com.project.evaluation.utils.ApplyItemScoreUtil;
 import com.project.evaluation.utils.SecurityContextUtil;
 import com.project.evaluation.ws.ApprovalNotifyService;
 import com.project.evaluation.vo.StudentApply.ApplyItemReq;
 import com.project.evaluation.vo.StudentApply.ApplyMaterialReq;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
 import com.project.evaluation.vo.StudentApply.RuleItemSimpleVO;
+import com.project.evaluation.vo.AcademicScore.MyAcademicScoreVO;
+import com.project.evaluation.vo.StudentApply.StudentApplyApprovedScoreRow;
 import com.project.evaluation.vo.StudentApply.StudentPeriodWorkflowVO;
+import com.project.evaluation.vo.StudentApply.StudentSectionScoreVO;
 import com.project.evaluation.vo.StudentApply.SubmitApplyReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,7 +37,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class StudentApplyServiceImpl implements StudentApplyService {
@@ -60,6 +68,21 @@ public class StudentApplyServiceImpl implements StudentApplyService {
 
     @Autowired
     private EvaluationSubmitTipService evaluationSubmitTipService;
+
+    @Autowired
+    private AcademicScoreService academicScoreService;
+
+    private static final LinkedHashMap<String, String> SECTION_TITLES = new LinkedHashMap<>();
+
+    static {
+        SECTION_TITLES.put("moral", "德育评价");
+        SECTION_TITLES.put("academic", "学业水平（智育）");
+        SECTION_TITLES.put("quality_bodymind", "身心素养");
+        SECTION_TITLES.put("quality_art", "审美与人文素养");
+        SECTION_TITLES.put("quality_labor", "劳动素养");
+        SECTION_TITLES.put("quality_innovation", "创新素养");
+        SECTION_TITLES.put("custom", "其他（非细则项）");
+    }
 
     @Override
     public List<RuleItemSimpleVO> listRuleItems(Long periodId) {
@@ -171,6 +194,79 @@ public class StudentApplyServiceImpl implements StudentApplyService {
     @Override
     public List<EvaluationSubmitTip> listSubmitTipsForStudent(Long periodId, String sectionCode) {
         return evaluationSubmitTipService.listForStudent(periodId, sectionCode);
+    }
+
+    @Override
+    public List<StudentSectionScoreVO> listMySectionScores(Long periodId) {
+        if (periodId == null || periodId <= 0) {
+            throw new IllegalArgumentException("请选择有效综测周期");
+        }
+        periodWorkflowService.requirePeriod(periodId);
+        Long uid = SecurityContextUtil.getCurrentUserId().longValue();
+        Map<String, BigDecimal> sums = new LinkedHashMap<>();
+        for (String code : SECTION_TITLES.keySet()) {
+            sums.put(code, BigDecimal.ZERO);
+        }
+        List<StudentApplyApprovedScoreRow> rows = studentApplyMapper.listApprovedScoresForPeriod(uid, periodId);
+        for (StudentApplyApprovedScoreRow row : rows) {
+            String sec = resolveSectionCode(row.getSourceType(), row.getModuleCode(), row.getSubmoduleCode());
+            BigDecimal v = ApplyItemScoreUtil.effectiveScore(
+                    row.getScore(),
+                    row.getSourceType(),
+                    row.getBaseScore(),
+                    row.getCoeff(),
+                    row.getScoreMode());
+            sums.merge(sec, v, BigDecimal::add);
+        }
+        MyAcademicScoreVO ac = academicScoreService.getMyScore(periodId);
+        BigDecimal intellectual = BigDecimal.ZERO;
+        if (ac != null && ac.getIntellectualScore() != null) {
+            intellectual = ac.getIntellectualScore();
+        }
+        sums.put("academic", intellectual);
+
+        List<StudentSectionScoreVO> out = new ArrayList<>();
+        for (Map.Entry<String, String> e : SECTION_TITLES.entrySet()) {
+            StudentSectionScoreVO vo = new StudentSectionScoreVO();
+            vo.setSectionCode(e.getKey());
+            vo.setSectionTitle(e.getValue());
+            vo.setEarnedScore(sums.getOrDefault(e.getKey(), BigDecimal.ZERO));
+            out.add(vo);
+        }
+        return out;
+    }
+
+    private static String resolveSectionCode(String sourceType, String moduleCode, String submoduleCode) {
+        if (StringUtils.hasText(sourceType) && "CUSTOM".equalsIgnoreCase(sourceType.trim())) {
+            return "custom";
+        }
+        String m = moduleCode == null ? "" : moduleCode.trim().toUpperCase();
+        String s = submoduleCode == null ? "" : submoduleCode.trim().toUpperCase();
+        if ("MORAL".equals(m)) {
+            return "moral";
+        }
+        if ("ACADEMIC".equals(m)) {
+            return "academic";
+        }
+        if ("QUALITY".equals(m)) {
+            if ("BODYMIND".equals(s)) {
+                return "quality_bodymind";
+            }
+            if ("ART".equals(s) || "MEDIA".equals(s) || "ACTIVITY".equals(s)) {
+                return "quality_art";
+            }
+            if ("LABOR".equals(s) || "LANGUAGE".equals(s)) {
+                return "quality_labor";
+            }
+            if ("INNOVATION".equals(s) || "PAPER".equals(s)) {
+                return "quality_innovation";
+            }
+            return "quality_labor";
+        }
+        if (m.isEmpty()) {
+            return "custom";
+        }
+        return "moral";
     }
 
     private void validateAndInsertItem(Long applyId, ApplyItemReq itemReq) {
