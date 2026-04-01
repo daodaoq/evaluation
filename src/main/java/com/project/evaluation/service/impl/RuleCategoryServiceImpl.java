@@ -1,7 +1,7 @@
 package com.project.evaluation.service.impl;
 
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.RuleCategory;
 import com.project.evaluation.mapper.RuleCategoryMapper;
@@ -109,10 +109,9 @@ public class RuleCategoryServiceImpl implements RuleCategoryService {
 
         List<RuleCategory> ruleCategorys = ruleCategoryMapper.paginationQuery();
 
-        Page<RuleCategory> u = (Page<RuleCategory>) ruleCategorys;
-
-        pb.setTotal(u.getTotal());
-        pb.setItems(u.getResult());
+        PageInfo<RuleCategory> info = new PageInfo<>(ruleCategorys);
+        pb.setTotal(info.getTotal());
+        pb.setItems(info.getList());
         return pb;
     }
 }

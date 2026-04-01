@@ -1,7 +1,7 @@
 package com.project.evaluation.service.impl;
 
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Time;
 import com.project.evaluation.mapper.TimeMapper;
@@ -117,12 +117,11 @@ public class TimeServiceImpl implements TimeService {
 
         PageHelper.startPage(pageNum, pageSize);
 
-        List<Time> times = timeMapper.paginationQuery(periodName,status);
-
-        Page<Time> u = (Page<Time>) times;
-
-        pb.setTotal(u.getTotal());
-        pb.setItems(u.getResult());
+        List<Time> times = timeMapper.paginationQuery(periodName, status);
+        // 用 PageInfo 包装，避免将 List 强转为 Page 在部分环境下触发 ClassCastException（会落到全局异常→“系统异常”）
+        PageInfo<Time> info = new PageInfo<>(times);
+        pb.setTotal(info.getTotal());
+        pb.setItems(info.getList());
         return pb;
     }
 }

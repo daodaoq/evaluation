@@ -94,5 +94,5 @@ public interface RuleMapper {
      * @param status
      * @return
      */
-    List<Rule> paginationQuery(Integer periodId, Integer status);
+    List<Rule> paginationQuery(@Param("periodId") Integer periodId, @Param("status") Integer status);
 }

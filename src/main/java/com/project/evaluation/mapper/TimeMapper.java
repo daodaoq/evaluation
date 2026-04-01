@@ -90,5 +90,5 @@ public interface TimeMapper {
      * @param status
      * @return
      */
-    List<Time> paginationQuery(String periodName, Integer status);
+    List<Time> paginationQuery(@Param("periodName") String periodName, @Param("status") Integer status);
 }

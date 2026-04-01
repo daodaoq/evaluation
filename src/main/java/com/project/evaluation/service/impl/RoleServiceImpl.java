@@ -1,7 +1,7 @@
 package com.project.evaluation.service.impl;
 
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Role;
 import com.project.evaluation.mapper.RoleMapper;
@@ -106,9 +106,9 @@ public class RoleServiceImpl implements RoleService {
         PageBean<Role> pb = new PageBean<>();
         PageHelper.startPage(pageNum, pageSize);
         List<Role> roles = roleMapper.paginationQuery(status);
-        Page<Role> u = (Page<Role>) roles;
-        pb.setTotal(u.getTotal());
-        pb.setItems(u.getResult());
+        PageInfo<Role> info = new PageInfo<>(roles);
+        pb.setTotal(info.getTotal());
+        pb.setItems(info.getList());
         return pb;
     }
 

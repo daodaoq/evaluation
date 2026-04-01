@@ -1,7 +1,7 @@
 package com.project.evaluation.service.impl;
 
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.College;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.mapper.CollegeMapper;
@@ -113,9 +113,9 @@ public class CollegeServiceImpl implements CollegeService {
         PageBean<College> pb = new PageBean<>();
         PageHelper.startPage(pageNum, pageSize);
         List<College> colleges = collegeMapper.paginationQuery(status);
-        Page<College> u = (Page<College>) colleges;
-        pb.setTotal(u.getTotal());
-        pb.setItems(u.getResult());
+        PageInfo<College> info = new PageInfo<>(colleges);
+        pb.setTotal(info.getTotal());
+        pb.setItems(info.getList());
         return pb;
     }
 }

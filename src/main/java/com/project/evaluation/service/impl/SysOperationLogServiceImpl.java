@@ -1,7 +1,7 @@
 package com.project.evaluation.service.impl;
 
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.MyUser;
 import com.project.evaluation.entity.SysOperationLog;
@@ -43,9 +43,9 @@ public class SysOperationLogServiceImpl implements SysOperationLogService {
         }
 
         var list = sysOperationLogMapper.selectOperationLogPage(uid, keyword);
-        // 不保留 Page 局部变量，避免静态分析误判为资源泄露
-        pb.setTotal(((Page<SysOperationLog>) list).getTotal());
-        pb.setItems(((Page<SysOperationLog>) list).getResult());
+        PageInfo<SysOperationLog> info = new PageInfo<>(list);
+        pb.setTotal(info.getTotal());
+        pb.setItems(info.getList());
         return pb;
     }
 }

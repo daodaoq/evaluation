@@ -2,8 +2,8 @@ package com.project.evaluation.service.impl;
 
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.Authority;
 import com.project.evaluation.entity.College;
 import com.project.evaluation.entity.MyUser;
@@ -144,9 +144,9 @@ public class UserServiceImpl implements UserService {
         PageBean<LoginUserVO> pb = new PageBean<>();
         PageHelper.startPage(pageNum, pageSize);
         List<LoginUserVO> list = userMapper.selectUserPage(studentId, status, collegeId);
-        Page<LoginUserVO> page = (Page<LoginUserVO>) list;
-        pb.setTotal(page.getTotal());
-        pb.setItems(page.getResult());
+        PageInfo<LoginUserVO> info = new PageInfo<>(list);
+        pb.setTotal(info.getTotal());
+        pb.setItems(info.getList());
         return pb;
     }
 

@@ -1,7 +1,7 @@
 package com.project.evaluation.service.impl;
 
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.mapper.ClassMapper;
 import com.project.evaluation.entity.Class;
@@ -125,9 +125,9 @@ public class ClassServiceImpl implements ClassService {
         PageBean<Class> pb = new PageBean<>();
         PageHelper.startPage(pageNum, pageSize);
         List<Class> classes = classMapper.paginationQuery(collegeId, gradeYear);
-        Page<Class> u = (Page<Class>) classes;
-        pb.setTotal(u.getTotal());
-        pb.setItems(u.getResult());
+        PageInfo<Class> info = new PageInfo<>(classes);
+        pb.setTotal(info.getTotal());
+        pb.setItems(info.getList());
         return pb;
     }
 }

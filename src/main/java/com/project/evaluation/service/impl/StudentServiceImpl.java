@@ -2,8 +2,8 @@ package com.project.evaluation.service.impl;
 
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.Class;
 import com.project.evaluation.entity.College;
 import com.project.evaluation.entity.MyUser;
@@ -77,8 +77,9 @@ public class StudentServiceImpl implements StudentService {
         if (scope == TeacherScopeService.StudentMenuScope.ADMIN) {
             PageHelper.startPage(pageNum, pageSize);
             List<LoginUserVO> list = userMapper.selectStudentPage(studentId, status, collegeId, classId, STUDENT_ROLE_ID);
-            pb.setTotal(((Page<LoginUserVO>) list).getTotal());
-            pb.setItems(((Page<LoginUserVO>) list).getResult());
+            PageInfo<LoginUserVO> info = new PageInfo<>(list);
+            pb.setTotal(info.getTotal());
+            pb.setItems(info.getList());
             return pb;
         }
         List<Integer> classIds = teacherScopeService.getManagedClassIdsForCurrentTeacher();
@@ -89,8 +90,9 @@ public class StudentServiceImpl implements StudentService {
         }
         PageHelper.startPage(pageNum, pageSize);
         List<LoginUserVO> list = userMapper.selectStudentPageScoped(studentId, status, collegeId, classId, STUDENT_ROLE_ID, classIds);
-        pb.setTotal(((Page<LoginUserVO>) list).getTotal());
-        pb.setItems(((Page<LoginUserVO>) list).getResult());
+        PageInfo<LoginUserVO> info = new PageInfo<>(list);
+        pb.setTotal(info.getTotal());
+        pb.setItems(info.getList());
         return pb;
     }
 

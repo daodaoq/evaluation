@@ -1,7 +1,7 @@
 package com.project.evaluation.service.impl;
 
-import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Rule;
 import com.project.evaluation.entity.RuleItem;
@@ -136,10 +136,9 @@ public class RuleItemServiceImpl implements RuleItemService {
 
         List<RuleItem> ruleItems = ruleItemMapper.paginationQuery();
 
-        Page<RuleItem> u = (Page<RuleItem>) ruleItems;
-
-        pb.setTotal(u.getTotal());
-        pb.setItems(u.getResult());
+        PageInfo<RuleItem> info = new PageInfo<>(ruleItems);
+        pb.setTotal(info.getTotal());
+        pb.setItems(info.getList());
         return pb;
     }
 
