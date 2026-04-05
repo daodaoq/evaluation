@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 @Data
 public class ApprovedRuleItemScoreRow {
     private Long studentUserId;
+    /** 申报项 id，用于计分时区分同细则多条通过记录 */
+    private Long applyItemId;
     private Long ruleItemId;
     private String itemName;
     private String moduleCode;

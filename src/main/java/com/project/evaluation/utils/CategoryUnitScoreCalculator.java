@@ -73,6 +73,14 @@ public final class CategoryUnitScoreCalculator {
             }
         }
 
+        BigDecimal academicFromIntellectual = ApplyScoreConstants.intellectualToAcademicScore(intellectualScore);
+        Integer academicCatId = findAcademicCategoryId(allCategories);
+        boolean mergedIntellectualIntoAcademicTree =
+                academicCatId != null && academicFromIntellectual.compareTo(ZERO) > 0;
+        if (mergedIntellectualIntoAcademicTree) {
+            addPart.merge(academicCatId, academicFromIntellectual, BigDecimal::add);
+        }
+
         Integer positionCatId = findPositionCategoryId(allCategories);
         BigDecimal positionExtra = nz(positionCustomScore);
         if (positionExtra.compareTo(ZERO) > 0 && positionCatId != null) {
@@ -157,10 +165,12 @@ public final class CategoryUnitScoreCalculator {
         StudentCategoryScoreOverviewVO out = new StudentCategoryScoreOverviewVO();
         out.setCategoryRoots(roots);
 
-        if (intellectualScore != null && intellectualScore.compareTo(ZERO) != 0) {
+        if (!mergedIntellectualIntoAcademicTree
+                && intellectualScore != null
+                && intellectualScore.compareTo(ZERO) != 0) {
             StudentScoreExtraRowVO ex = new StudentScoreExtraRowVO();
-            ex.setLabel("学业水平（智育）");
-            ex.setScore(scale(intellectualScore));
+            ex.setLabel("学业水平（智育折算）");
+            ex.setScore(scale(academicFromIntellectual));
             out.getExtraRows().add(ex);
         }
         if (positionExtra.compareTo(ZERO) != 0) {
@@ -187,6 +197,37 @@ public final class CategoryUnitScoreCalculator {
         }
         out.setTotalScore(scale(sumTree.add(extraSum)));
         return out;
+    }
+
+    /**
+     * 挂载智育折算分的分类：优先精确名「学业水平评价」；否则取根节点（parent=0）且名称含「学业水平」的唯一入口。
+     */
+    private static Integer findAcademicCategoryId(List<RuleCategory> all) {
+        Integer id = findRuleCategoryIdByExactName(all, ApplyScoreConstants.ACADEMIC_ROOT_CATEGORY_NAME);
+        if (id != null) {
+            return id;
+        }
+        if (all == null || all.isEmpty()) {
+            return null;
+        }
+        for (RuleCategory c : all) {
+            if (c == null || c.getId() == null) {
+                continue;
+            }
+            int p = c.getParentId() == null || c.getParentId() == 0 ? 0 : c.getParentId();
+            if (p != 0) {
+                continue;
+            }
+            String n = c.getCategoryName();
+            if (!StringUtils.hasText(n)) {
+                continue;
+            }
+            String t = n.trim();
+            if (t.contains("学业水平")) {
+                return c.getId();
+            }
+        }
+        return null;
     }
 
     private static Integer findPositionCategoryId(List<RuleCategory> all) {

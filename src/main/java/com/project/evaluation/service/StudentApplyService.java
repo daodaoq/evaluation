@@ -34,11 +34,11 @@ public interface StudentApplyService {
 
     /**
      * 当前周期：按规则分类扁平列表（含缩进标题）；与 {@link #listMyCategoryScoreOverview(Long)} 同源，
-     * 兼容旧表格；智育、任职分等见 extra 行。
+     * 兼容旧表格；智育折算进「学业水平评价」分类；未挂树的任职分等见 extra 行。
      */
     List<StudentSectionScoreVO> listMySectionScores(Long periodId);
 
-    /** 当前周期：以分类为单位的得分树 + 学业等附加行 */
+    /** 当前周期：以分类为单位的得分树 + 未挂树项等附加行 */
     StudentCategoryScoreOverviewVO listMyCategoryScoreOverview(Long periodId);
 
     /** 上传申报材料到 MinIO，返回对象键与展示用文件名 */

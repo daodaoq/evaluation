@@ -273,7 +273,8 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
                         it.getRuleItemId(),
                         it.getPersistedScore(),
                         it.getSourceType(),
-                        it.getItemCategory());
+                        it.getItemCategory(),
+                        it.getApplyItemId());
                 if (it.getSourceType() != null && "CUSTOM".equalsIgnoreCase(it.getSourceType().trim())) {
                     BigDecimal v = ApplyItemScoreUtil.effectiveScore(
                             it.getPersistedScore(),

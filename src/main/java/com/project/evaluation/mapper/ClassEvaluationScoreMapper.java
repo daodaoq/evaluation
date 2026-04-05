@@ -50,6 +50,7 @@ public interface ClassEvaluationScoreMapper {
         <script>
         SELECT
             a.student_id AS studentUserId,
+            ai.id AS applyItemId,
             ri.id AS ruleItemId,
             COALESCE(ri.item_name, ai.custom_name) AS itemName,
             COALESCE(ri.module_code,

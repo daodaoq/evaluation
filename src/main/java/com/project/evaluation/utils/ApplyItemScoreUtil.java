@@ -44,4 +44,29 @@ public final class ApplyItemScoreUtil {
         }
         return actual;
     }
+
+    /**
+     * 学生提交细则项时写入库的分值：基础分×系数×比例，SUB/MAX_ONLY 为负。
+     *
+     * @param ratio 已规范到 (0,1] 的比例，null 按 1
+     */
+    public static BigDecimal declaredRuleItemScore(
+            BigDecimal baseScore,
+            BigDecimal coeff,
+            String scoreMode,
+            BigDecimal ratio
+    ) {
+        BigDecimal r = ratio == null || ratio.compareTo(ZERO) <= 0 ? ONE : ratio;
+        if (r.compareTo(ONE) > 0) {
+            r = ONE;
+        }
+        BigDecimal base = baseScore != null ? baseScore : ZERO;
+        BigDecimal c = coeff != null ? coeff : ONE;
+        BigDecimal actual = base.multiply(c).multiply(r);
+        String mode = scoreMode == null ? "ADD" : scoreMode.trim().toUpperCase();
+        if ("SUB".equals(mode) || "MAX_ONLY".equals(mode)) {
+            return actual.negate();
+        }
+        return actual;
+    }
 }

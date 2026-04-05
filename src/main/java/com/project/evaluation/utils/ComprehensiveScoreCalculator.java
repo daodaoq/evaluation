@@ -43,7 +43,9 @@ public final class ComprehensiveScoreCalculator {
             Long ruleItemId,
             BigDecimal persistedScore,
             String sourceType,
-            Integer itemCategory
+            Integer itemCategory,
+            /** 申报项 id：非空时与同 dedupe_group 的其它通过记录分开参与「同类取高」 */
+            Long applyItemId
     ) {
         public static RuleItemScoreRow legacy(
                 String itemName,
@@ -55,7 +57,7 @@ public final class ComprehensiveScoreCalculator {
         ) {
             return new RuleItemScoreRow(
                     itemName, moduleCode, null, level, baseScore, coeff, scoreMode,
-                    null, null, null, "RULE", null);
+                    null, null, null, "RULE", null, null);
         }
     }
 
@@ -88,7 +90,9 @@ public final class ComprehensiveScoreCalculator {
             scores.put(s, p.sectionBase(s, ZERO));
         }
         if (intellectualScore != null) {
-            scores.put(Section.ACADEMIC, intellectualScore);
+            scores.put(
+                    Section.ACADEMIC,
+                    scores.get(Section.ACADEMIC).add(ApplyScoreConstants.intellectualToAcademicScore(intellectualScore)));
         }
         if (approvedRuleRows == null || approvedRuleRows.isEmpty()) {
             return scores;
@@ -97,6 +101,7 @@ public final class ComprehensiveScoreCalculator {
         List<DedupedScoreLine> lines = buildDedupedLines(approvedRuleRows, p);
 
         BigDecimal moralPen = ZERO, moralAdd = ZERO;
+        BigDecimal acadPen = ZERO, acadAdd = ZERO;
         BigDecimal bmPen = ZERO, bmAdd = ZERO;
         BigDecimal artPen = ZERO, artAdd = ZERO;
         BigDecimal labPen = ZERO, labVolunteer = ZERO, labLang = ZERO;
@@ -106,6 +111,7 @@ public final class ComprehensiveScoreCalculator {
             if (ln.penalty()) {
                 switch (ln.section()) {
                     case MORAL -> moralPen = moralPen.add(ln.signed());
+                    case ACADEMIC -> acadPen = acadPen.add(ln.signed());
                     case QUALITY_BODYMIND -> bmPen = bmPen.add(ln.signed());
                     case QUALITY_ART -> artPen = artPen.add(ln.signed());
                     case QUALITY_LABOR -> labPen = labPen.add(ln.signed());
@@ -119,6 +125,7 @@ public final class ComprehensiveScoreCalculator {
             }
             switch (ln.section()) {
                 case MORAL -> moralAdd = moralAdd.add(ln.signed());
+                case ACADEMIC -> acadAdd = acadAdd.add(ln.signed());
                 case QUALITY_BODYMIND -> bmAdd = bmAdd.add(ln.signed());
                 case QUALITY_ART -> artAdd = artAdd.add(ln.signed());
                 case QUALITY_LABOR -> {
@@ -145,6 +152,7 @@ public final class ComprehensiveScoreCalculator {
 
         BigDecimal positionMoral = sumSelfReportedPositionMoral(approvedRuleRows);
         scores.put(Section.MORAL, scores.get(Section.MORAL).add(moralPen).add(moralAdd).add(positionMoral));
+        scores.put(Section.ACADEMIC, scores.get(Section.ACADEMIC).add(acadPen).add(acadAdd));
         scores.put(Section.QUALITY_BODYMIND, scores.get(Section.QUALITY_BODYMIND).add(bmPen).add(bmAdd));
         scores.put(Section.QUALITY_ART, scores.get(Section.QUALITY_ART).add(artPen).add(artAdd));
         scores.put(Section.QUALITY_LABOR, scores.get(Section.QUALITY_LABOR).add(labPen).add(labVolunteer).add(labLang));
@@ -153,7 +161,7 @@ public final class ComprehensiveScoreCalculator {
         return scores;
     }
 
-    /** 细则行去重后的列表（不含 CUSTOM、不含学业模块细则行）。 */
+    /** 细则行去重后的列表（不含 CUSTOM；学业模块仅保留「突发加减分」细则名）。 */
     public static List<DedupedScoreLine> buildDedupedLines(List<RuleItemScoreRow> approvedRuleRows, ScorePolicySnapshot policy) {
         ScorePolicySnapshot p = policy == null ? ScorePolicySnapshot.defaults() : policy;
         List<DedupedScoreLine> raw = new ArrayList<>();
@@ -166,7 +174,7 @@ public final class ComprehensiveScoreCalculator {
                     continue;
                 }
                 Section sec = detectSection(row.moduleCode(), row.submoduleCode(), row.level(), row.itemName());
-                if (sec == Section.ACADEMIC) {
+                if (sec == Section.ACADEMIC && !ApplyScoreConstants.isStudentAllowedAcademicAdhocRuleItemName(row.itemName())) {
                     continue;
                 }
                 BigDecimal signed = ApplyItemScoreUtil.effectiveScore(
@@ -178,6 +186,10 @@ public final class ComprehensiveScoreCalculator {
                 String mode = row.scoreMode() == null ? "ADD" : row.scoreMode().trim().toUpperCase();
                 boolean penalty = "SUB".equals(mode) || "MAX_ONLY".equals(mode);
                 String dedupe = row.dedupeGroup() == null ? null : row.dedupeGroup().trim();
+                if (row.applyItemId() != null) {
+                    String base = (dedupe == null || dedupe.isEmpty()) ? "ROW" : dedupe;
+                    dedupe = base + "::ai" + row.applyItemId();
+                }
                 String subU = row.submoduleCode() == null ? "" : row.submoduleCode().trim().toUpperCase();
                 raw.add(new DedupedScoreLine(sec, dedupe, subU, penalty, signed, row.itemCategory()));
             }

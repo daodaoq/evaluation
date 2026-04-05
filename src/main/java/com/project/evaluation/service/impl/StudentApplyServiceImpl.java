@@ -32,6 +32,7 @@ import com.project.evaluation.vo.StudentApply.ApplyItemReq;
 import com.project.evaluation.vo.StudentApply.ApplyMaterialReq;
 import com.project.evaluation.vo.StudentApply.MaterialUploadVO;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
+import com.project.evaluation.vo.StudentApply.RuleItemScoreMeta;
 import com.project.evaluation.vo.StudentApply.RuleItemSimpleVO;
 import com.project.evaluation.vo.AcademicScore.MyAcademicScoreVO;
 import com.project.evaluation.vo.StudentApply.StudentApplyApprovedScoreRow;
@@ -358,12 +359,17 @@ public class StudentApplyServiceImpl implements StudentApplyService {
             insertPositionSubmitNoneMarker(apply.getId());
         } else if (!CollectionUtils.isEmpty(req.getItems())) {
             for (ApplyItemReq itemReq : req.getItems()) {
-                validateAndInsertItem(apply.getId(), itemReq, currentUserId, req.getPeriodId());
+                int q = expandQuantityForItem(itemReq);
+                for (int i = 0; i < q; i++) {
+                    validateAndInsertItem(apply.getId(), itemReq, currentUserId, req.getPeriodId());
+                }
             }
         }
 
         int pendingItemCount =
-                (submitNone || submitPosNone) ? 1 : (req.getItems() == null ? 0 : req.getItems().size());
+                (submitNone || submitPosNone)
+                        ? 1
+                        : sumSubmitItemQuantities(req.getItems());
         MyUser stu = userMapper.selectById(currentUserId);
         String payload = buildNewApplyNotifyJson(apply.getId(), req.getPeriodId(), stu, pendingItemCount);
         Integer classId = stu != null ? stu.getClassId() : null;
@@ -472,7 +478,34 @@ public class StudentApplyServiceImpl implements StudentApplyService {
     @Override
     public List<MyApplyVO> listMyApplyItems() {
         Integer currentUserId = SecurityContextUtil.getCurrentUserId();
-        return studentApplyMapper.listMyApplyItems(currentUserId.longValue());
+        List<MyApplyVO> list = studentApplyMapper.listMyApplyItems(currentUserId.longValue());
+        if (list.isEmpty()) {
+            return list;
+        }
+        List<Long> itemIds = list.stream()
+                .map(MyApplyVO::getApplyItemId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (itemIds.isEmpty()) {
+            return list;
+        }
+        List<EvaluationApplyMaterial> mats = studentApplyMapper.listMaterialsByApplyItemIds(itemIds);
+        Map<Long, List<ApplyMaterialReq>> byItem = new LinkedHashMap<>();
+        for (EvaluationApplyMaterial m : mats) {
+            if (m.getApplyItemId() == null) {
+                continue;
+            }
+            ApplyMaterialReq r = new ApplyMaterialReq();
+            r.setFileName(m.getFileName());
+            r.setFileUrl(m.getFileUrl());
+            byItem.computeIfAbsent(m.getApplyItemId(), k -> new ArrayList<>()).add(r);
+        }
+        for (MyApplyVO vo : list) {
+            Long aid = vo.getApplyItemId();
+            vo.setMaterials(aid == null ? List.of() : byItem.getOrDefault(aid, List.of()));
+        }
+        return list;
     }
 
     @Override
@@ -573,7 +606,8 @@ public class StudentApplyServiceImpl implements StudentApplyService {
                     row.getRuleItemId(),
                     row.getScore(),
                     row.getSourceType(),
-                    row.getItemCategory()));
+                    row.getItemCategory(),
+                    row.getApplyItemId()));
         }
         MyAcademicScoreVO ac = academicScoreService.getMyScore(periodId);
         BigDecimal intellectual = BigDecimal.ZERO;
@@ -680,6 +714,57 @@ public class StudentApplyServiceImpl implements StudentApplyService {
         return minioUtil.getPreviewUrl(key, 60, TimeUnit.MINUTES);
     }
 
+    /** 仅细则项支持 quantity；任职分、非细则恒为 1 条。 */
+    private static int expandQuantityForItem(ApplyItemReq itemReq) {
+        if (itemReq == null) {
+            return 1;
+        }
+        boolean isRuleItem = itemReq.getRuleItemId() != null && itemReq.getRuleItemId() > 0;
+        if (!isRuleItem) {
+            return 1;
+        }
+        return normalizeQuantity(itemReq.getQuantity());
+    }
+
+    private static int sumSubmitItemQuantities(List<ApplyItemReq> items) {
+        if (items == null) {
+            return 0;
+        }
+        int s = 0;
+        for (ApplyItemReq r : items) {
+            s += expandQuantityForItem(r);
+        }
+        return s;
+    }
+
+    private static int normalizeQuantity(Integer q) {
+        if (q == null) {
+            return 1;
+        }
+        if (q < 1) {
+            return 1;
+        }
+        if (q > 99) {
+            return 99;
+        }
+        return q;
+    }
+
+    private static BigDecimal normalizeScoreRatio(BigDecimal r) {
+        if (r == null) {
+            return BigDecimal.ONE;
+        }
+        BigDecimal x = r.setScale(4, RoundingMode.HALF_UP);
+        BigDecimal min = new BigDecimal("0.01");
+        if (x.compareTo(min) < 0) {
+            return min;
+        }
+        if (x.compareTo(BigDecimal.ONE) > 0) {
+            return BigDecimal.ONE;
+        }
+        return x;
+    }
+
     private static void assertMaterialKeyForUser(Integer userId, String fileUrlOrKey) {
         if (userId == null || !StringUtils.hasText(fileUrlOrKey)) {
             throw new IllegalArgumentException("材料无效");
@@ -734,7 +819,10 @@ public class StudentApplyServiceImpl implements StudentApplyService {
         } else {
             String moduleCode = studentApplyMapper.findModuleCodeByRuleItemId(itemReq.getRuleItemId());
             if ("ACADEMIC".equalsIgnoreCase(moduleCode)) {
-                throw new IllegalArgumentException("学业水平（智育）由管理端维护，学生端不可申报该项");
+                String adhocName = studentApplyMapper.findItemNameByRuleItemId(itemReq.getRuleItemId());
+                if (!ApplyScoreConstants.isStudentAllowedAcademicAdhocRuleItemName(adhocName)) {
+                    throw new IllegalArgumentException("学业水平（智育）由管理端维护，学生端不可申报该项");
+                }
             }
             Integer needMaterial = studentApplyMapper.findNeedMaterialByRuleItemId(itemReq.getRuleItemId());
             if (needMaterial == null) {
@@ -766,14 +854,39 @@ public class StudentApplyServiceImpl implements StudentApplyService {
         EvaluationApplyItem item = new EvaluationApplyItem();
         item.setApplyId(applyId);
         item.setRuleItemId(isRuleItem ? itemReq.getRuleItemId() : null);
-        item.setScore(
-                isPositionScore
-                        ? itemReq.getDeclaredScore().setScale(2, RoundingMode.HALF_UP)
-                        : BigDecimal.ZERO);
+        if (isRuleItem) {
+            RuleItemScoreMeta meta = studentApplyMapper.selectRuleItemScoreMeta(itemReq.getRuleItemId());
+            if (meta == null) {
+                throw new IllegalArgumentException("存在无效细则项");
+            }
+            BigDecimal ratio = normalizeScoreRatio(itemReq.getScoreRatio());
+            BigDecimal declared = ApplyItemScoreUtil.declaredRuleItemScore(
+                    meta.getBaseScore(),
+                    meta.getCoeff(),
+                    meta.getScoreMode(),
+                    ratio);
+            item.setScore(declared.setScale(2, RoundingMode.HALF_UP));
+        } else {
+            item.setScore(
+                    isPositionScore
+                            ? itemReq.getDeclaredScore().setScale(2, RoundingMode.HALF_UP)
+                            : BigDecimal.ZERO);
+        }
         item.setStatus("PENDING");
         item.setSourceType(isRuleItem ? "RULE" : "CUSTOM");
         item.setCustomName(isRuleItem ? null : itemReq.getCustomName().trim());
-        item.setRemark(StringUtils.hasText(itemReq.getRemark()) ? itemReq.getRemark().trim() : null);
+        String remarkTrim = StringUtils.hasText(itemReq.getRemark()) ? itemReq.getRemark().trim() : null;
+        if (isRuleItem) {
+            BigDecimal ratio = normalizeScoreRatio(itemReq.getScoreRatio());
+            if (ratio.compareTo(BigDecimal.ONE) != 0) {
+                String tag = "【申报分数比例:" + ratio.stripTrailingZeros().toPlainString() + "】";
+                item.setRemark(remarkTrim == null ? tag : tag + remarkTrim);
+            } else {
+                item.setRemark(remarkTrim);
+            }
+        } else {
+            item.setRemark(remarkTrim);
+        }
         studentApplyMapper.insertApplyItem(item);
 
         if (!CollectionUtils.isEmpty(itemReq.getMaterials())) {

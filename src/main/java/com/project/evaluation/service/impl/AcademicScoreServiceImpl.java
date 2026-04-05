@@ -5,10 +5,12 @@ import cn.hutool.poi.excel.ExcelUtil;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.AcademicScore;
+import com.project.evaluation.entity.MyUser;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Class;
 import com.project.evaluation.entity.College;
 import com.project.evaluation.mapper.AcademicScoreMapper;
+import com.project.evaluation.mapper.UserMapper;
 import com.project.evaluation.service.AcademicScoreService;
 import com.project.evaluation.service.ClassService;
 import com.project.evaluation.service.CollegeService;
@@ -40,6 +42,9 @@ public class AcademicScoreServiceImpl implements AcademicScoreService {
 
     @Autowired
     private AcademicScoreMapper academicScoreMapper;
+
+    @Autowired
+    private UserMapper userMapper;
 
     @Autowired
     private PeriodWorkflowService periodWorkflowService;
@@ -202,7 +207,24 @@ public class AcademicScoreServiceImpl implements AcademicScoreService {
     public MyAcademicScoreVO getMyScore(Long periodId) {
         if (periodId == null || periodId <= 0) throw new IllegalArgumentException("请选择有效综测周期");
         Integer userId = SecurityContextUtil.getCurrentUserId();
-        return academicScoreMapper.findMyScore(userId.longValue(), periodId);
+        MyAcademicScoreVO vo = academicScoreMapper.findMyScore(userId.longValue(), periodId);
+        if (vo != null && vo.getIntellectualScore() != null) {
+            return vo;
+        }
+        MyUser u = userMapper.selectById(userId);
+        if (u == null || !StringUtils.hasText(u.getStudentId())) {
+            return vo;
+        }
+        AcademicScore row = academicScoreMapper.findByPeriodAndStudentNo(periodId, u.getStudentId().trim());
+        if (row == null) {
+            return vo;
+        }
+        return new MyAcademicScoreVO(
+                row.getPeriodId(),
+                row.getStudentNo(),
+                row.getClassName(),
+                row.getStudentName(),
+                row.getIntellectualScore());
     }
 
     @Override

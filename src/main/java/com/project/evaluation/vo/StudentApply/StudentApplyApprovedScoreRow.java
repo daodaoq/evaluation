@@ -7,6 +7,8 @@ import java.math.BigDecimal;
 /** 单条已通过申报项得分（用于按模块汇总） */
 @Data
 public class StudentApplyApprovedScoreRow {
+    /** 申报项主键，用于计分时区分同细则多条通过记录（不参与同类取最高合并） */
+    private Long applyItemId;
     private Long ruleItemId;
     private String itemName;
     private String level;

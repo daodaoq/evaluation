@@ -4,6 +4,7 @@ import com.project.evaluation.entity.EvaluationApply;
 import com.project.evaluation.entity.EvaluationApplyItem;
 import com.project.evaluation.entity.EvaluationApplyMaterial;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
+import com.project.evaluation.vo.StudentApply.RuleItemScoreMeta;
 import com.project.evaluation.vo.StudentApply.RuleItemSimpleVO;
 import com.project.evaluation.vo.StudentApply.StudentApplyApprovedScoreRow;
 import org.apache.ibatis.annotations.Insert;
@@ -12,6 +13,7 @@ import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.Collection;
 import java.util.List;
 
 @Mapper
@@ -35,7 +37,11 @@ public interface StudentApplyMapper {
         WHERE r.period_id = #{periodId}
           AND r.status = 1
           AND ri.status = 1
-          AND (ri.module_code IS NULL OR UPPER(ri.module_code) <> 'ACADEMIC')
+          AND (
+              ri.module_code IS NULL
+              OR UPPER(ri.module_code) <> 'ACADEMIC'
+              OR ri.item_name IN ('其他加分（突发·每次0.1）', '其他减分（突发·每次0.1）')
+          )
         ORDER BY ri.id DESC
         """)
     List<RuleItemSimpleVO> listEnabledRuleItemsByPeriod(@Param("periodId") Long periodId);
@@ -51,6 +57,9 @@ public interface StudentApplyMapper {
 
     @Select("SELECT module_code FROM evaluation_rule_item WHERE id = #{ruleItemId} LIMIT 1")
     String findModuleCodeByRuleItemId(@Param("ruleItemId") Long ruleItemId);
+
+    @Select("SELECT item_name FROM evaluation_rule_item WHERE id = #{ruleItemId} LIMIT 1")
+    String findItemNameByRuleItemId(@Param("ruleItemId") Long ruleItemId);
 
     @Insert("""
         INSERT INTO evaluation_apply
@@ -111,7 +120,21 @@ public interface StudentApplyMapper {
     List<MyApplyVO> listMyApplyItems(@Param("studentUserId") Long studentUserId);
 
     @Select("""
-            SELECT ri.id AS ruleItemId,
+            <script>
+            SELECT id, apply_item_id AS applyItemId, file_name AS fileName, file_url AS fileUrl
+            FROM evaluation_apply_material
+            WHERE apply_item_id IN
+            <foreach collection="itemIds" item="id" open="(" separator="," close=")">
+                #{id}
+            </foreach>
+            ORDER BY apply_item_id ASC, id ASC
+            </script>
+            """)
+    List<EvaluationApplyMaterial> listMaterialsByApplyItemIds(@Param("itemIds") Collection<Long> itemIds);
+
+    @Select("""
+            SELECT ai.id AS applyItemId,
+                   ri.id AS ruleItemId,
                    COALESCE(ri.item_name, ai.custom_name) AS itemName,
                    ri.level AS level,
                    ri.dedupe_group AS dedupeGroup,
@@ -144,4 +167,12 @@ public interface StudentApplyMapper {
 
     @Select("SELECT rule_id FROM evaluation_rule_item WHERE id = #{ruleItemId} LIMIT 1")
     Integer findRuleIdByRuleItemId(@Param("ruleItemId") Long ruleItemId);
+
+    @Select("""
+            SELECT ri.base_score AS baseScore, IFNULL(ri.coeff, 1) AS coeff, ri.score_mode AS scoreMode
+            FROM evaluation_rule_item ri
+            WHERE ri.id = #{ruleItemId}
+            LIMIT 1
+            """)
+    RuleItemScoreMeta selectRuleItemScoreMeta(@Param("ruleItemId") Long ruleItemId);
 }

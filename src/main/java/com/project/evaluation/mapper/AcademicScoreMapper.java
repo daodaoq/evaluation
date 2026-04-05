@@ -61,7 +61,7 @@ public interface AcademicScoreMapper {
 
     @Select("""
         SELECT * FROM evaluation_student_academic_score
-        WHERE period_id = #{periodId} AND student_no = #{studentNo}
+        WHERE period_id = #{periodId} AND TRIM(student_no) = TRIM(#{studentNo})
         LIMIT 1
         """)
     AcademicScore findByPeriodAndStudentNo(@Param("periodId") Long periodId, @Param("studentNo") String studentNo);
@@ -80,7 +80,8 @@ public interface AcademicScoreMapper {
           eas.student_name AS studentName,
           eas.intellectual_score AS intellectualScore
         FROM evaluation_student_academic_score eas
-        INNER JOIN sys_user su ON su.student_id = eas.student_no
+        INNER JOIN sys_user su
+          ON TRIM(su.student_id) = TRIM(eas.student_no)
         WHERE su.id = #{studentUserId} AND eas.period_id = #{periodId}
         LIMIT 1
         """)
