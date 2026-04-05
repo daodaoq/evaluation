@@ -20,5 +20,5 @@ public interface RuleService {
 
     List<Rule> ruleList();
 
-    PageBean<Rule> paginationQuery(Integer pageNum, Integer pageSize, Integer periodId, Integer status);
+    PageBean<Rule> paginationQuery(Integer pageNum, Integer pageSize, List<Integer> periodIds, List<Integer> statuses);
 }

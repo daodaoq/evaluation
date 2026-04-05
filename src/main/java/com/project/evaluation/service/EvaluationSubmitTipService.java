@@ -6,7 +6,7 @@ import com.project.evaluation.vo.SubmitTip.SubmitTipSaveReq;
 import java.util.List;
 
 public interface EvaluationSubmitTipService {
-    List<EvaluationSubmitTip> listForManage(Long periodId, String sectionCode);
+    List<EvaluationSubmitTip> listForManage(List<Long> periodIds, List<String> sectionCodes);
 
     void add(SubmitTipSaveReq req);
 

@@ -68,7 +68,8 @@ public class StudentServiceImpl implements StudentService {
     private TeacherScopeService teacherScopeService;
 
     @Override
-    public PageBean<LoginUserVO> pageStudents(Integer pageNum, Integer pageSize, String studentId, Integer status, Integer collegeId, Integer classId) {
+    public PageBean<LoginUserVO> pageStudents(Integer pageNum, Integer pageSize, String studentId,
+                                              List<Integer> statuses, List<Integer> collegeIds, List<Integer> filterClassIds) {
         TeacherScopeService.StudentMenuScope scope = teacherScopeService.resolveStudentMenuScope();
         if (scope == TeacherScopeService.StudentMenuScope.DENIED) {
             throw new AccessDeniedException("无权限");
@@ -76,20 +77,30 @@ public class StudentServiceImpl implements StudentService {
         PageBean<LoginUserVO> pb = new PageBean<>();
         if (scope == TeacherScopeService.StudentMenuScope.ADMIN) {
             PageHelper.startPage(pageNum, pageSize);
-            List<LoginUserVO> list = userMapper.selectStudentPage(studentId, status, collegeId, classId, STUDENT_ROLE_ID);
+            List<LoginUserVO> list = userMapper.selectStudentPage(studentId, statuses, collegeIds, filterClassIds, STUDENT_ROLE_ID);
             PageInfo<LoginUserVO> info = new PageInfo<>(list);
             pb.setTotal(info.getTotal());
             pb.setItems(info.getList());
             return pb;
         }
-        List<Integer> classIds = teacherScopeService.getManagedClassIdsForCurrentTeacher();
-        if (classIds == null || classIds.isEmpty()) {
+        List<Integer> scopeClassIds = teacherScopeService.getManagedClassIdsForCurrentTeacher();
+        if (scopeClassIds == null || scopeClassIds.isEmpty()) {
             pb.setTotal(0L);
             pb.setItems(Collections.emptyList());
             return pb;
         }
+        List<Integer> effectiveFilter = null;
+        if (filterClassIds != null && !filterClassIds.isEmpty()) {
+            effectiveFilter = filterClassIds.stream().filter(scopeClassIds::contains).distinct().toList();
+            if (effectiveFilter.isEmpty()) {
+                pb.setTotal(0L);
+                pb.setItems(Collections.emptyList());
+                return pb;
+            }
+        }
         PageHelper.startPage(pageNum, pageSize);
-        List<LoginUserVO> list = userMapper.selectStudentPageScoped(studentId, status, collegeId, classId, STUDENT_ROLE_ID, classIds);
+        List<LoginUserVO> list = userMapper.selectStudentPageScoped(
+                studentId, statuses, collegeIds, effectiveFilter, STUDENT_ROLE_ID, scopeClassIds);
         PageInfo<LoginUserVO> info = new PageInfo<>(list);
         pb.setTotal(info.getTotal());
         pb.setItems(info.getList());

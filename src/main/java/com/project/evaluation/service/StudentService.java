@@ -12,7 +12,8 @@ import java.util.List;
 
 public interface StudentService {
 
-    PageBean<LoginUserVO> pageStudents(Integer pageNum, Integer pageSize, String studentId, Integer status, Integer collegeId, Integer classId);
+    PageBean<LoginUserVO> pageStudents(Integer pageNum, Integer pageSize, String studentId,
+                                       List<Integer> statuses, List<Integer> collegeIds, List<Integer> classIds);
 
     void addStudent(AddStudentReq req);
 

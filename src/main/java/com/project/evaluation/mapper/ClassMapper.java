@@ -74,5 +74,5 @@ public interface ClassMapper {
      * @param gradeYear
      * @return
      */
-    List<Class> paginationQuery(@Param("collegeId") Integer collegeId, @Param("gradeYear") Integer gradeYear);
+    List<Class> paginationQuery(@Param("collegeIds") List<Integer> collegeIds, @Param("gradeYears") List<Integer> gradeYears);
 }

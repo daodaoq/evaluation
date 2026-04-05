@@ -72,5 +72,5 @@ public interface CollegeMapper {
      * @param status
      * @return
      */
-    List<College> paginationQuery(Integer status);
+    List<College> paginationQuery(@Param("statuses") List<Integer> statuses);
 }

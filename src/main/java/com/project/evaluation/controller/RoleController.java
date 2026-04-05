@@ -114,8 +114,8 @@ public class RoleController {
     public Result<PageBean<Role>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
-            @RequestParam(required = false) Integer status) {
-        PageBean<Role> pb = roleService.paginationQuery(pageNum, pageSize, status);
+            @RequestParam(required = false) List<Integer> statuses) {
+        PageBean<Role> pb = roleService.paginationQuery(pageNum, pageSize, statuses);
         return Result.success(pb);
     }
 

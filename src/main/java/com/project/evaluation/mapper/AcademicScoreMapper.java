@@ -14,17 +14,23 @@ public interface AcademicScoreMapper {
         SELECT *
         FROM evaluation_student_academic_score
         <where>
-            <if test="periodId != null"> AND period_id = #{periodId} </if>
+            <if test="periodIds != null and periodIds.size() &gt; 0">
+                AND period_id IN
+                <foreach collection="periodIds" item="pid" open="(" separator="," close=")">#{pid}</foreach>
+            </if>
             <if test="studentNo != null and studentNo != ''"> AND student_no LIKE CONCAT('%', #{studentNo}, '%') </if>
-            <if test="className != null and className != ''"> AND class_name LIKE CONCAT('%', #{className}, '%') </if>
+            <if test="classNames != null and classNames.size() &gt; 0">
+                AND class_name IN
+                <foreach collection="classNames" item="cn" open="(" separator="," close=")">#{cn}</foreach>
+            </if>
             <if test="studentName != null and studentName != ''"> AND student_name LIKE CONCAT('%', #{studentName}, '%') </if>
         </where>
         ORDER BY id DESC
         </script>
         """)
-    List<AcademicScore> pageQuery(@Param("periodId") Long periodId,
+    List<AcademicScore> pageQuery(@Param("periodIds") List<Long> periodIds,
                                   @Param("studentNo") String studentNo,
-                                  @Param("className") String className,
+                                  @Param("classNames") List<String> classNames,
                                   @Param("studentName") String studentName);
 
     @Insert("""

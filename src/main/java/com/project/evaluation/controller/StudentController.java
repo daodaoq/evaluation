@@ -33,10 +33,10 @@ public class StudentController {
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
             @RequestParam(required = false) String studentId,
-            @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) Integer collegeId,
-            @RequestParam(required = false) Integer classId) {
-        return Result.success(studentService.pageStudents(pageNum, pageSize, studentId, status, collegeId, classId));
+            @RequestParam(required = false) List<Integer> statuses,
+            @RequestParam(required = false) List<Integer> collegeIds,
+            @RequestParam(required = false) List<Integer> classIds) {
+        return Result.success(studentService.pageStudents(pageNum, pageSize, studentId, statuses, collegeIds, classIds));
     }
 
     @PostMapping

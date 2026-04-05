@@ -7,11 +7,13 @@
     <select id="paginationQuery" resultType="com.project.evaluation.entity.Class">
         SELECT * FROM `sys_class`
         <where>
-            <if test="collegeId != null">
-                AND college_id = #{collegeId}
+            <if test="collegeIds != null and collegeIds.size() &gt; 0">
+                AND college_id IN
+                <foreach collection="collegeIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
             </if>
-            <if test="gradeYear != null">
-                AND grade_year = #{gradeYear}
+            <if test="gradeYears != null and gradeYears.size() &gt; 0">
+                AND grade_year IN
+                <foreach collection="gradeYears" item="gy" open="(" separator="," close=")">#{gy}</foreach>
             </if>
         </where>
         ORDER BY create_time DESC

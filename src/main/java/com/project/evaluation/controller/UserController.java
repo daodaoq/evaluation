@@ -75,9 +75,9 @@ public class UserController {
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
             @RequestParam(required = false) String studentId,
-            @RequestParam(required = false) Integer status,
-            @RequestParam(required = false) Integer collegeId) {
-        return Result.success(userService.paginationQueryUsers(pageNum, pageSize, studentId, status, collegeId));
+            @RequestParam(required = false) List<Integer> statuses,
+            @RequestParam(required = false) List<Integer> collegeIds) {
+        return Result.success(userService.paginationQueryUsers(pageNum, pageSize, studentId, statuses, collegeIds));
     }
 
     /**

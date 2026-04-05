@@ -5,7 +5,8 @@ import org.springframework.util.StringUtils;
 import java.math.BigDecimal;
 
 /**
- * 申报项得分：库内 score 与细则 base/coeff/score_mode 的换算（与 ComprehensiveScoreCalculator 中单条 ADD/SUB 一致）。
+ * 申报项得分：库内 score 与细则 base/coeff/score_mode 的换算。
+ * SUB：按正数基础分从模块分中扣减（返回负分）；MAX_ONLY：与 SUB 相同符号规则，用于一票否决等「按固定分值扣减」项（见库内数据）。
  */
 public final class ApplyItemScoreUtil {
 

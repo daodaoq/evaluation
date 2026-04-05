@@ -6,11 +6,13 @@
     <select id="paginationQuery" resultType="com.project.evaluation.entity.Rule">
         SELECT * FROM `evaluation_rule`
         <where>
-            <if test="periodId != null">
-                AND period_id = #{periodId}
+            <if test="periodIds != null and periodIds.size() &gt; 0">
+                AND period_id IN
+                <foreach collection="periodIds" item="pid" open="(" separator="," close=")">#{pid}</foreach>
             </if>
-            <if test="status != null">
-                AND status = #{status}
+            <if test="statuses != null and statuses.size() &gt; 0">
+                AND status IN
+                <foreach collection="statuses" item="st" open="(" separator="," close=")">#{st}</foreach>
             </if>
         </where>
         ORDER BY id DESC

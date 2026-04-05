@@ -109,10 +109,10 @@ public class CollegeServiceImpl implements CollegeService {
      * @return
      */
     @Override
-    public PageBean<College> paginationQuery(Integer pageNum, Integer pageSize, Integer status) {
+    public PageBean<College> paginationQuery(Integer pageNum, Integer pageSize, List<Integer> statuses) {
         PageBean<College> pb = new PageBean<>();
         PageHelper.startPage(pageNum, pageSize);
-        List<College> colleges = collegeMapper.paginationQuery(status);
+        List<College> colleges = collegeMapper.paginationQuery(statuses);
         PageInfo<College> info = new PageInfo<>(colleges);
         pb.setTotal(info.getTotal());
         pb.setItems(info.getList());

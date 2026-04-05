@@ -140,10 +140,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public PageBean<LoginUserVO> paginationQueryUsers(Integer pageNum, Integer pageSize, String studentId, Integer status, Integer collegeId) {
+    public PageBean<LoginUserVO> paginationQueryUsers(Integer pageNum, Integer pageSize, String studentId,
+                                                      List<Integer> statuses, List<Integer> collegeIds) {
         PageBean<LoginUserVO> pb = new PageBean<>();
         PageHelper.startPage(pageNum, pageSize);
-        List<LoginUserVO> list = userMapper.selectUserPage(studentId, status, collegeId);
+        List<LoginUserVO> list = userMapper.selectUserPage(studentId, statuses, collegeIds);
         PageInfo<LoginUserVO> info = new PageInfo<>(list);
         pb.setTotal(info.getTotal());
         pb.setItems(info.getList());

@@ -44,7 +44,7 @@ public interface TimeService {
      */
     List<Time> timeList();
 
-    PageBean<Time> paginationQuery(Integer pageNum, Integer pageSize, String periodName, Integer status);
+    PageBean<Time> paginationQuery(Integer pageNum, Integer pageSize, String periodName, List<Integer> statuses);
 }
 
 

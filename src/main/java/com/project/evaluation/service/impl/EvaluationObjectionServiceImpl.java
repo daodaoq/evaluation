@@ -69,13 +69,15 @@ public class EvaluationObjectionServiceImpl implements EvaluationObjectionServic
     }
 
     @Override
-    public PageBean<ObjectionRowVO> page(Integer pageNum, Integer pageSize, Long periodId, String status, Long classId) {
+    public PageBean<ObjectionRowVO> page(Integer pageNum, Integer pageSize, List<Long> periodIds, List<String> statuses,
+                                         Long collegeId, Long classId) {
         ReviewScope scope = resolveScope(classId);
         if (scope.emptyResult()) {
             return new PageBean<>(0L, Collections.emptyList());
         }
         try (Page<Object> ignored = PageHelper.startPage(pageNum, pageSize)) {
-            List<ObjectionRowVO> rows = evaluationObjectionMapper.pageRows(periodId, status, classId, scope.classIdsFilter());
+            List<ObjectionRowVO> rows = evaluationObjectionMapper.pageRows(
+                    periodIds, statuses, collegeId, classId, scope.classIdsFilter());
             PageInfo<ObjectionRowVO> info = new PageInfo<>(rows);
             return new PageBean<>(info.getTotal(), info.getList());
         }

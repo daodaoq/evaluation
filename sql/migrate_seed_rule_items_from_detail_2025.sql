@@ -37,11 +37,11 @@ WHERE r.rule_name = @rule_name;
 
 DELETE FROM evaluation_rule WHERE rule_name = @rule_name;
 
--- 3) 规则总览（细则明确：德育10、学业70、素质20）
+-- 3) 规则总览
 INSERT INTO evaluation_rule (
-    period_id, rule_name, version_code, moral_weight, academic_weight, quality_weight, status, create_time, update_time
+    period_id, rule_name, version_code, status, create_time, update_time
 ) VALUES (
-    @period_id, @rule_name, 'v2025.2', 10.00, 70.00, 20.00, 1, NOW(), NOW()
+    @period_id, @rule_name, 'v2025.2', 1, NOW(), NOW()
 );
 SET @rule_id := LAST_INSERT_ID();
 

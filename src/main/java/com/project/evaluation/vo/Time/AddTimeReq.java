@@ -10,6 +10,11 @@ import java.time.LocalDateTime;
 @Data
 public class AddTimeReq {
     /**
+     * 插入成功后由 MyBatis 回填（仅输出，请求体可忽略）
+     */
+    private Integer id;
+
+    /**
      * 周期名称
      */
     private String periodName;

@@ -3,15 +3,26 @@ package com.project.evaluation.service.impl;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.project.evaluation.entity.PageBean;
+import com.project.evaluation.entity.Time;
+import com.project.evaluation.constant.ApplyScoreConstants;
+import com.project.evaluation.entity.Rule;
+import com.project.evaluation.entity.RuleCategory;
 import com.project.evaluation.mapper.AcademicScoreMapper;
 import com.project.evaluation.mapper.ClassEvaluationScoreMapper;
+import com.project.evaluation.mapper.RuleCategoryMapper;
+import com.project.evaluation.mapper.RuleMapper;
+import com.project.evaluation.mapper.TimeMapper;
+import com.project.evaluation.scorepolicy.ScorePolicySnapshot;
 import com.project.evaluation.service.ClassEvaluationScoreService;
 import com.project.evaluation.service.TeacherScopeService;
+import com.project.evaluation.utils.ApplyItemScoreUtil;
+import com.project.evaluation.utils.CategoryUnitScoreCalculator;
 import com.project.evaluation.utils.ComprehensiveScoreCalculator;
 import com.project.evaluation.vo.ClassScore.ApprovedRuleItemScoreRow;
 import com.project.evaluation.vo.ClassScore.ClassEvaluationScoreRowVO;
 import com.project.evaluation.vo.ClassScore.ClassEvaluationStudentRow;
 import com.project.evaluation.vo.ClassScore.ClassUnsubmittedRowVO;
+import com.project.evaluation.vo.StudentApply.StudentCategoryScoreOverviewVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -22,8 +33,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,29 +51,26 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
     @Autowired
     private TeacherScopeService teacherScopeService;
 
+    @Autowired
+    private TimeMapper timeMapper;
+
+    @Autowired
+    private RuleMapper ruleMapper;
+
+    @Autowired
+    private RuleCategoryMapper ruleCategoryMapper;
+
     @Override
     public PageBean<ClassEvaluationScoreRowVO> page(Integer pageNum, Integer pageSize,
-                                                    Long periodId, Long classId, String studentNo, String totalSortOrder) {
-        if (periodId == null || periodId <= 0) {
-            throw new IllegalArgumentException("请选择综测周期");
-        }
-        if (academicScoreMapper.countPeriod(periodId) == 0) {
-            throw new IllegalArgumentException("综测周期不存在");
-        }
+                                                    List<Long> periodIds, Long classId, String studentNo, String totalSortOrder) {
+        List<Long> pids = resolvePeriodIds(periodIds);
         Scope scope = resolveScope(classId);
         if (scope.emptyResult()) {
             return new PageBean<>(0L, Collections.emptyList());
         }
-
         int safePageNum = pageNum == null || pageNum < 1 ? 1 : pageNum;
         int safePageSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
-        List<ClassEvaluationStudentRow> studs = classEvaluationScoreMapper.listStudentsForScore(
-                periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
-
-        List<Long> userIds = studs.stream().map(ClassEvaluationStudentRow::getUserId).toList();
-        Map<Long, List<ApprovedRuleItemScoreRow>> itemMap = loadItemsGrouped(periodId, userIds, scope);
-
-        List<ClassEvaluationScoreRowVO> vos = buildVos(studs, itemMap);
+        List<ClassEvaluationScoreRowVO> vos = listScoreRowsAllPeriods(pids, scope, studentNo);
         applyTotalSort(vos, totalSortOrder);
         long total = vos.size();
         int from = (safePageNum - 1) * safePageSize;
@@ -72,38 +82,26 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
     }
 
     @Override
-    public byte[] exportExcel(Long periodId, Long classId, String studentNo, String totalSortOrder) {
-        if (periodId == null || periodId <= 0) {
-            throw new IllegalArgumentException("请选择综测周期");
-        }
-        if (academicScoreMapper.countPeriod(periodId) == 0) {
-            throw new IllegalArgumentException("综测周期不存在");
-        }
+    public byte[] exportExcel(List<Long> periodIds, Long classId, String studentNo, String totalSortOrder) {
+        List<Long> pids = resolvePeriodIds(periodIds);
         Scope scope = resolveScope(classId);
         if (scope.emptyResult()) {
             return toExcelBytes(Collections.emptyList());
         }
-
-        List<ClassEvaluationStudentRow> studs = classEvaluationScoreMapper.listStudentsForScore(
-                periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
-        List<Long> userIds = studs.stream().map(ClassEvaluationStudentRow::getUserId).toList();
-        Map<Long, List<ApprovedRuleItemScoreRow>> itemMap = loadItemsGrouped(periodId, userIds, scope);
-        List<ClassEvaluationScoreRowVO> vos = buildVos(studs, itemMap);
+        List<ClassEvaluationScoreRowVO> vos = listScoreRowsAllPeriods(pids, scope, studentNo);
         applyTotalSort(vos, totalSortOrder);
         return toExcelBytes(vos);
     }
 
     @Override
     public PageBean<ClassUnsubmittedRowVO> pageUnsubmitted(Integer pageNum, Integer pageSize,
-                                                           Long periodId, Long classId, String studentNo) {
-        if (periodId == null || periodId <= 0) throw new IllegalArgumentException("请选择综测周期");
-        if (academicScoreMapper.countPeriod(periodId) == 0) throw new IllegalArgumentException("综测周期不存在");
+                                                           List<Long> periodIds, Long classId, String studentNo) {
+        List<Long> pids = resolvePeriodIds(periodIds);
         Scope scope = resolveScope(classId);
         if (scope.emptyResult()) return new PageBean<>(0L, Collections.emptyList());
         int safePageNum = pageNum == null || pageNum < 1 ? 1 : pageNum;
         int safePageSize = pageSize == null || pageSize < 1 ? 10 : pageSize;
-        List<ClassUnsubmittedRowVO> rows = classEvaluationScoreMapper.listUnsubmittedStudents(
-                periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
+        List<ClassUnsubmittedRowVO> rows = listUnsubmittedAllPeriods(pids, scope, studentNo);
         long total = rows.size();
         int from = (safePageNum - 1) * safePageSize;
         if (from >= rows.size()) return new PageBean<>(total, Collections.emptyList());
@@ -112,14 +110,59 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
     }
 
     @Override
-    public byte[] exportUnsubmittedExcel(Long periodId, Long classId, String studentNo) {
-        if (periodId == null || periodId <= 0) throw new IllegalArgumentException("请选择综测周期");
-        if (academicScoreMapper.countPeriod(periodId) == 0) throw new IllegalArgumentException("综测周期不存在");
+    public byte[] exportUnsubmittedExcel(List<Long> periodIds, Long classId, String studentNo) {
+        List<Long> pids = resolvePeriodIds(periodIds);
         Scope scope = resolveScope(classId);
         if (scope.emptyResult()) return toUnsubmittedExcelBytes(Collections.emptyList());
-        List<ClassUnsubmittedRowVO> rows = classEvaluationScoreMapper.listUnsubmittedStudents(
-                periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
+        List<ClassUnsubmittedRowVO> rows = listUnsubmittedAllPeriods(pids, scope, studentNo);
         return toUnsubmittedExcelBytes(rows);
+    }
+
+    private List<Long> resolvePeriodIds(List<Long> requested) {
+        if (requested != null && !requested.isEmpty()) {
+            LinkedHashSet<Long> set = new LinkedHashSet<>();
+            for (Long id : requested) {
+                if (id != null && id > 0 && academicScoreMapper.countPeriod(id) > 0) {
+                    set.add(id);
+                }
+            }
+            return new ArrayList<>(set);
+        }
+        List<Time> all = timeMapper.timeList();
+        if (all == null || all.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return all.stream()
+                .map(Time::getId)
+                .filter(Objects::nonNull)
+                .map(Integer::longValue)
+                .sorted(Comparator.reverseOrder())
+                .toList();
+    }
+
+    private List<ClassEvaluationScoreRowVO> listScoreRowsAllPeriods(List<Long> pids, Scope scope, String studentNo) {
+        List<ClassEvaluationScoreRowVO> combined = new ArrayList<>();
+        for (Long periodId : pids) {
+            List<ClassEvaluationStudentRow> studs = classEvaluationScoreMapper.listStudentsForScore(
+                    periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
+            List<Long> userIds = studs.stream().map(ClassEvaluationStudentRow::getUserId).toList();
+            Map<Long, List<ApprovedRuleItemScoreRow>> itemMap = loadItemsGrouped(periodId, userIds, scope);
+            combined.addAll(buildVos(studs, itemMap, periodId));
+        }
+        return combined;
+    }
+
+    private List<ClassUnsubmittedRowVO> listUnsubmittedAllPeriods(List<Long> pids, Scope scope, String studentNo) {
+        List<ClassUnsubmittedRowVO> combined = new ArrayList<>();
+        for (Long periodId : pids) {
+            List<ClassUnsubmittedRowVO> part = classEvaluationScoreMapper.listUnsubmittedStudents(
+                    periodId, scope.classIdsFilter(), scope.singleClassId(), studentNo);
+            for (ClassUnsubmittedRowVO r : part) {
+                r.setPeriodId(periodId);
+            }
+            combined.addAll(part);
+        }
+        return combined;
     }
 
     private static void applyTotalSort(List<ClassEvaluationScoreRowVO> vos, String totalSortOrder) {
@@ -141,11 +184,12 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
         try (ExcelWriter writer = ExcelUtil.getWriter(true);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             writer.writeRow(List.of(
-                    "学号", "姓名", "班级", "智育", "德育", "学业(智育)", "身心素养", "审美人文", "劳动素养", "创新素养", "总分(预估)"
+                    "周期ID", "学号", "姓名", "班级", "智育", "德育", "学业(智育)", "身心素养", "审美人文", "劳动素养", "创新素养", "总分(预估)"
             ));
             for (ClassEvaluationScoreRowVO r : vos) {
                 // 不可使用 List.of：任一 null 会 NPE；库中姓名/班级等可能为空
                 writer.writeRow(Arrays.asList(
+                        r.getPeriodId() == null ? "" : String.valueOf(r.getPeriodId()),
                         blankIfNull(r.getStudentNo()),
                         blankIfNull(r.getStudentName()),
                         blankIfNull(r.getClassName()),
@@ -169,9 +213,10 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
     private static byte[] toUnsubmittedExcelBytes(List<ClassUnsubmittedRowVO> rows) {
         try (ExcelWriter writer = ExcelUtil.getWriter(true);
              ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            writer.writeRow(List.of("学号", "姓名", "班级"));
+            writer.writeRow(List.of("周期ID", "学号", "姓名", "班级"));
             for (ClassUnsubmittedRowVO r : rows) {
                 writer.writeRow(Arrays.asList(
+                        r.getPeriodId() == null ? "" : String.valueOf(r.getPeriodId()),
                         blankIfNull(r.getStudentNo()),
                         blankIfNull(r.getStudentName()),
                         blankIfNull(r.getClassName())
@@ -202,26 +247,66 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
     }
 
     private List<ClassEvaluationScoreRowVO> buildVos(List<ClassEvaluationStudentRow> studs,
-                                                     Map<Long, List<ApprovedRuleItemScoreRow>> itemMap) {
+                                                     Map<Long, List<ApprovedRuleItemScoreRow>> itemMap,
+                                                     Long periodId) {
+        ScorePolicySnapshot policy = ScorePolicySnapshot.defaults();
+        Rule rule = ruleMapper.findLatestByPeriodId(periodId.intValue());
+        List<RuleCategory> ruleCats =
+                (rule == null || rule.getId() == null) ? List.of() : ruleCategoryMapper.listByRuleId(rule.getId());
         List<ClassEvaluationScoreRowVO> list = new ArrayList<>();
         for (ClassEvaluationStudentRow s : studs) {
             List<ApprovedRuleItemScoreRow> raw = itemMap.getOrDefault(s.getUserId(), List.of());
-            List<ComprehensiveScoreCalculator.RuleItemScoreRow> calcRows = new ArrayList<>();
+            BigDecimal position = BigDecimal.ZERO;
+            BigDecimal otherCustom = BigDecimal.ZERO;
+            List<ComprehensiveScoreCalculator.RuleItemScoreRow> rulesOnly = new ArrayList<>();
+            List<ComprehensiveScoreCalculator.RuleItemScoreRow> allForSection = new ArrayList<>();
             for (ApprovedRuleItemScoreRow it : raw) {
-                calcRows.add(new ComprehensiveScoreCalculator.RuleItemScoreRow(
+                ComprehensiveScoreCalculator.RuleItemScoreRow row = new ComprehensiveScoreCalculator.RuleItemScoreRow(
                         it.getItemName(),
                         it.getModuleCode(),
+                        it.getSubmoduleCode(),
                         it.getLevel(),
                         it.getBaseScore(),
                         it.getCoeff(),
-                        it.getScoreMode()
-                ));
+                        it.getScoreMode(),
+                        it.getDedupeGroup(),
+                        it.getRuleItemId(),
+                        it.getPersistedScore(),
+                        it.getSourceType(),
+                        it.getItemCategory());
+                if (it.getSourceType() != null && "CUSTOM".equalsIgnoreCase(it.getSourceType().trim())) {
+                    BigDecimal v = ApplyItemScoreUtil.effectiveScore(
+                            it.getPersistedScore(),
+                            it.getSourceType(),
+                            it.getBaseScore(),
+                            it.getCoeff(),
+                            it.getScoreMode());
+                    if (ApplyScoreConstants.isPositionScoreCustomName(it.getItemName())) {
+                        position = position.add(v);
+                    } else if (!ApplyScoreConstants.isCategorySubmitNoneCustomName(it.getItemName())
+                            && !ApplyScoreConstants.isPositionSubmitNoneCustomName(it.getItemName())) {
+                        otherCustom = otherCustom.add(v);
+                    }
+                    allForSection.add(row);
+                    continue;
+                }
+                rulesOnly.add(row);
+                allForSection.add(row);
             }
             BigDecimal intellectual = s.getIntellectualScore() != null ? s.getIntellectualScore() : BigDecimal.ZERO;
-            Map<ComprehensiveScoreCalculator.Section, BigDecimal> sec = ComprehensiveScoreCalculator.sectionScores(
-                    intellectual, calcRows);
+            StudentCategoryScoreOverviewVO cov = CategoryUnitScoreCalculator.buildOverview(
+                    intellectual,
+                    rulesOnly,
+                    position,
+                    otherCustom,
+                    ruleCats,
+                    id -> true,
+                    policy);
+            Map<ComprehensiveScoreCalculator.Section, BigDecimal> sec =
+                    ComprehensiveScoreCalculator.sectionScores(intellectual, allForSection, policy);
 
             ClassEvaluationScoreRowVO vo = new ClassEvaluationScoreRowVO();
+            vo.setPeriodId(periodId);
             vo.setUserId(s.getUserId());
             vo.setStudentNo(s.getStudentNo());
             vo.setStudentName(s.getStudentName());
@@ -234,7 +319,7 @@ public class ClassEvaluationScoreServiceImpl implements ClassEvaluationScoreServ
             vo.setQualityArtScore(scale(sec.get(ComprehensiveScoreCalculator.Section.QUALITY_ART)));
             vo.setQualityLaborScore(scale(sec.get(ComprehensiveScoreCalculator.Section.QUALITY_LABOR)));
             vo.setQualityInnovationScore(scale(sec.get(ComprehensiveScoreCalculator.Section.QUALITY_INNOVATION)));
-            vo.setTotalScore(ComprehensiveScoreCalculator.totalScore(sec));
+            vo.setTotalScore(scale(cov.getTotalScore()));
             list.add(vo);
         }
         return list;

@@ -146,20 +146,8 @@ public interface RuleItemMapper {
     @Delete("DELETE FROM evaluation_rule_item WHERE rule_id = #{ruleId}")
     int deleteByRuleId(@Param("ruleId") Integer ruleId);
 
-    @Insert("""
-        INSERT INTO evaluation_rule_item (
-            rule_id, item_name, item_type, item_category, level, base_score,
-            is_competition, need_material, status, score_mode, dedupe_group, coeff,
-            module_code, submodule_code, create_time, update_time
-        )
-        SELECT
-            #{targetRuleId}, item_name, item_type, item_category, level, base_score,
-            is_competition, need_material, status, score_mode, dedupe_group, coeff,
-            module_code, submodule_code, NOW(), NOW()
-        FROM evaluation_rule_item
-        WHERE rule_id = #{sourceRuleId}
-        """)
-    int copyByRuleId(@Param("sourceRuleId") Integer sourceRuleId, @Param("targetRuleId") Integer targetRuleId);
+    @Select("SELECT * FROM evaluation_rule_item WHERE rule_id = #{ruleId} ORDER BY id ASC")
+    List<RuleItem> listByRuleId(@Param("ruleId") Integer ruleId);
 
     @Select("SELECT COUNT(1) FROM evaluation_rule_item WHERE rule_id = #{ruleId}")
     int countByRuleId(@Param("ruleId") Integer ruleId);

@@ -2,8 +2,6 @@ package com.project.evaluation.vo.Rule;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
-
 /**
  * 更新规则总览请求体
  */
@@ -24,10 +22,4 @@ public class UpdateRuleReq {
      * 是否启用
      */
     private Integer status;
-
-    private BigDecimal moralWeight;
-
-    private BigDecimal academicWeight;
-
-    private BigDecimal qualityWeight;
 }

@@ -20,7 +20,8 @@ public interface UserService {
     /**
      * 用户管理分页（不含密码）
      */
-    PageBean<LoginUserVO> paginationQueryUsers(Integer pageNum, Integer pageSize, String studentId, Integer status, Integer collegeId);
+    PageBean<LoginUserVO> paginationQueryUsers(Integer pageNum, Integer pageSize, String studentId,
+                                               List<Integer> statuses, List<Integer> collegeIds);
 
     Result logout();
 

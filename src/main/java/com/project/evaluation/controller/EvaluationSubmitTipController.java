@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -20,9 +21,11 @@ public class EvaluationSubmitTipController {
     @GetMapping("/list")
     @PreAuthorize("hasAnyAuthority('sys:period:flow:menu','sys:objection:menu')")
     @CrossOrigin
-    public Result<List<EvaluationSubmitTip>> list(@RequestParam Long periodId,
-                                                  @RequestParam(required = false) String sectionCode) {
-        return Result.success(evaluationSubmitTipService.listForManage(periodId, sectionCode));
+    public Result<List<EvaluationSubmitTip>> list(@RequestParam(required = false) List<Long> periodIds,
+                                                  @RequestParam(required = false) List<String> sectionCodes) {
+        List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
+        List<String> scs = sectionCodes == null ? Collections.emptyList() : sectionCodes;
+        return Result.success(evaluationSubmitTipService.listForManage(pids, scs));
     }
 
     @PostMapping

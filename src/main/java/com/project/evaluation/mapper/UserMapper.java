@@ -25,17 +25,17 @@ public interface UserMapper {
      */
     List<LoginUserVO> selectUserPage(
             @Param("studentId") String studentId,
-            @Param("status") Integer status,
-            @Param("collegeId") Integer collegeId);
+            @Param("statuses") List<Integer> statuses,
+            @Param("collegeIds") List<Integer> collegeIds);
 
     /**
      * 仅含「学生」角色（sys_user_role.role_id = 学生）的分页列表
      */
     List<LoginUserVO> selectStudentPage(
             @Param("studentId") String studentId,
-            @Param("status") Integer status,
-            @Param("collegeId") Integer collegeId,
-            @Param("classId") Integer classId,
+            @Param("statuses") List<Integer> statuses,
+            @Param("collegeIds") List<Integer> collegeIds,
+            @Param("classIds") List<Integer> classIds,
             @Param("studentRoleId") Integer studentRoleId);
 
     /**
@@ -43,11 +43,11 @@ public interface UserMapper {
      */
     List<LoginUserVO> selectStudentPageScoped(
             @Param("studentId") String studentId,
-            @Param("status") Integer status,
-            @Param("collegeId") Integer collegeId,
-            @Param("classId") Integer classId,
+            @Param("statuses") List<Integer> statuses,
+            @Param("collegeIds") List<Integer> collegeIds,
+            @Param("filterClassIds") List<Integer> filterClassIds,
             @Param("studentRoleId") Integer studentRoleId,
-            @Param("classIds") List<Integer> classIds);
+            @Param("scopeClassIds") List<Integer> scopeClassIds);
 
     int insertUser(MyUser user);
 

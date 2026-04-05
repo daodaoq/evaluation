@@ -7,8 +7,9 @@
     <select id="paginationQuery" resultType="com.project.evaluation.entity.College">
         SELECT * FROM `sys_college`
         <where>
-            <if test="status != null">
-                AND status = #{status}
+            <if test="statuses != null and statuses.size() &gt; 0">
+                AND status IN
+                <foreach collection="statuses" item="st" open="(" separator="," close=")">#{st}</foreach>
             </if>
         </where>
         ORDER BY create_time DESC

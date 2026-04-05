@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -32,10 +33,19 @@ public class EvaluationSubmitTipServiceImpl implements EvaluationSubmitTipServic
     private PeriodEventLogService periodEventLogService;
 
     @Override
-    public List<EvaluationSubmitTip> listForManage(Long periodId, String sectionCode) {
-        periodWorkflowService.requirePeriod(periodId);
-        String normalized = normalizeSectionCode(sectionCode, false);
-        return evaluationSubmitTipMapper.listForManage(periodId, normalized);
+    public List<EvaluationSubmitTip> listForManage(List<Long> periodIds, List<String> sectionCodes) {
+        List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
+        if (!pids.isEmpty()) {
+            for (Long pid : pids) {
+                periodWorkflowService.requirePeriod(pid);
+            }
+        }
+        List<String> scs = sectionCodes == null ? Collections.emptyList() : sectionCodes;
+        List<String> normalized = scs.stream()
+                .map(s -> normalizeSectionCode(s, false))
+                .filter(s -> s != null && !s.isEmpty())
+                .toList();
+        return evaluationSubmitTipMapper.listForManage(pids, normalized.isEmpty() ? null : normalized);
     }
 
     @Override

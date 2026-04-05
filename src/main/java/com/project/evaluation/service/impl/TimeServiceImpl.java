@@ -36,6 +36,9 @@ public class TimeServiceImpl implements TimeService {
         if (addTimeReq.getArchived() == null) {
             addTimeReq.setArchived(0);
         }
+        if (addTimeReq.getStatus() == null) {
+            addTimeReq.setStatus(1);
+        }
         timeMapper.addTime(addTimeReq);
         log.info("添加成功：{}", addTimeReq);
     }
@@ -112,12 +115,12 @@ public class TimeServiceImpl implements TimeService {
      * @return
      */
     @Override
-    public PageBean<Time> paginationQuery(Integer pageNum, Integer pageSize, String periodName, Integer status) {
+    public PageBean<Time> paginationQuery(Integer pageNum, Integer pageSize, String periodName, List<Integer> statuses) {
         PageBean<Time> pb = new PageBean<>();
 
         PageHelper.startPage(pageNum, pageSize);
 
-        List<Time> times = timeMapper.paginationQuery(periodName, status);
+        List<Time> times = timeMapper.paginationQuery(periodName, statuses);
         // 用 PageInfo 包装，避免将 List 强转为 Page 在部分环境下触发 ClassCastException（会落到全局异常→“系统异常”）
         PageInfo<Time> info = new PageInfo<>(times);
         pb.setTotal(info.getTotal());

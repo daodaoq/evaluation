@@ -42,12 +42,21 @@ public interface EvaluationSubmitTipMapper {
     @Select("""
             <script>
             SELECT * FROM evaluation_student_submit_tip
-            WHERE period_id = #{periodId}
-              <if test="sectionCode != null and sectionCode != ''">AND section_code = #{sectionCode}</if>
-            ORDER BY section_code ASC, sort_order ASC, id DESC
+            <where>
+              <if test="periodIds != null and periodIds.size() &gt; 0">
+                AND period_id IN
+                <foreach collection="periodIds" item="pid" open="(" separator="," close=")">#{pid}</foreach>
+              </if>
+              <if test="sectionCodes != null and sectionCodes.size() &gt; 0">
+                AND section_code IN
+                <foreach collection="sectionCodes" item="sc" open="(" separator="," close=")">#{sc}</foreach>
+              </if>
+            </where>
+            ORDER BY period_id DESC, section_code ASC, sort_order ASC, id DESC
             </script>
             """)
-    List<EvaluationSubmitTip> listForManage(@Param("periodId") Long periodId, @Param("sectionCode") String sectionCode);
+    List<EvaluationSubmitTip> listForManage(@Param("periodIds") List<Long> periodIds,
+                                            @Param("sectionCodes") List<String> sectionCodes);
 
     @Select("""
             <script>

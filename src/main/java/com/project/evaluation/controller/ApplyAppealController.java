@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.List;
+
 @RestController
 @RequestMapping("/apply-appeal")
 public class ApplyAppealController {
@@ -26,12 +29,14 @@ public class ApplyAppealController {
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
             @RequestParam(required = false) String studentNo,
-            @RequestParam(required = false) Long periodId,
-            @RequestParam(required = false) String appealStatus,
+            @RequestParam(required = false) List<Long> periodIds,
+            @RequestParam(required = false) List<String> appealStatuses,
             @RequestParam(required = false) Long collegeId,
             @RequestParam(required = false) Long classId) {
+        List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
+        List<String> ast = appealStatuses == null ? Collections.emptyList() : appealStatuses;
         return Result.success(applyAppealService.pageAppeals(
-                pageNum, pageSize, studentNo, periodId, appealStatus, collegeId, classId));
+                pageNum, pageSize, studentNo, pids, ast, collegeId, classId));
     }
 
     /**

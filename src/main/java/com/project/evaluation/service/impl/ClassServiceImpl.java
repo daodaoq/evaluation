@@ -121,10 +121,10 @@ public class ClassServiceImpl implements ClassService {
      * @return
      */
     @Override
-    public PageBean<Class> paginationQuery(Integer pageNum, Integer pageSize, Integer collegeId, Integer gradeYear) {
+    public PageBean<Class> paginationQuery(Integer pageNum, Integer pageSize, List<Integer> collegeIds, List<Integer> gradeYears) {
         PageBean<Class> pb = new PageBean<>();
         PageHelper.startPage(pageNum, pageSize);
-        List<Class> classes = classMapper.paginationQuery(collegeId, gradeYear);
+        List<Class> classes = classMapper.paginationQuery(collegeIds, gradeYears);
         PageInfo<Class> info = new PageInfo<>(classes);
         pb.setTotal(info.getTotal());
         pb.setItems(info.getList());

@@ -33,11 +33,13 @@
             <if test="studentId != null and studentId != ''">
                 AND u.student_id LIKE CONCAT('%', #{studentId}, '%')
             </if>
-            <if test="status != null">
-                AND u.status = #{status}
+            <if test="statuses != null and statuses.size() &gt; 0">
+                AND u.status IN
+                <foreach collection="statuses" item="st" open="(" separator="," close=")">#{st}</foreach>
             </if>
-            <if test="collegeId != null">
-                AND u.college_id = #{collegeId}
+            <if test="collegeIds != null and collegeIds.size() &gt; 0">
+                AND u.college_id IN
+                <foreach collection="collegeIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
             </if>
             AND EXISTS (
                 SELECT 1
@@ -69,14 +71,17 @@
             <if test="studentId != null and studentId != ''">
                 AND u.student_id LIKE CONCAT('%', #{studentId}, '%')
             </if>
-            <if test="status != null">
-                AND u.status = #{status}
+            <if test="statuses != null and statuses.size() &gt; 0">
+                AND u.status IN
+                <foreach collection="statuses" item="st" open="(" separator="," close=")">#{st}</foreach>
             </if>
-            <if test="collegeId != null">
-                AND u.college_id = #{collegeId}
+            <if test="collegeIds != null and collegeIds.size() &gt; 0">
+                AND u.college_id IN
+                <foreach collection="collegeIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
             </if>
-            <if test="classId != null">
-                AND u.class_id = #{classId}
+            <if test="classIds != null and classIds.size() &gt; 0">
+                AND u.class_id IN
+                <foreach collection="classIds" item="clid" open="(" separator="," close=")">#{clid}</foreach>
             </if>
         </where>
         ORDER BY u.id DESC
@@ -102,22 +107,27 @@
             <if test="studentId != null and studentId != ''">
                 AND u.student_id LIKE CONCAT('%', #{studentId}, '%')
             </if>
-            <if test="status != null">
-                AND u.status = #{status}
+            <if test="statuses != null and statuses.size() &gt; 0">
+                AND u.status IN
+                <foreach collection="statuses" item="st" open="(" separator="," close=")">#{st}</foreach>
             </if>
-            <if test="collegeId != null">
-                AND u.college_id = #{collegeId}
+            <if test="collegeIds != null and collegeIds.size() &gt; 0">
+                AND u.college_id IN
+                <foreach collection="collegeIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
             </if>
-            <if test="classId != null">
-                AND u.class_id = #{classId}
-            </if>
-            <if test="classIds != null and classIds.size() &gt; 0">
+            <if test="filterClassIds != null and filterClassIds.size() &gt; 0">
                 AND u.class_id IN
-                <foreach collection="classIds" item="cid" open="(" separator="," close=")">
+                <foreach collection="filterClassIds" item="cid" open="(" separator="," close=")">
                     #{cid}
                 </foreach>
             </if>
-            <if test="classIds != null and classIds.size() == 0">
+            <if test="scopeClassIds != null and scopeClassIds.size() &gt; 0">
+                AND u.class_id IN
+                <foreach collection="scopeClassIds" item="cid" open="(" separator="," close=")">
+                    #{cid}
+                </foreach>
+            </if>
+            <if test="scopeClassIds != null and scopeClassIds.size() == 0">
                 AND 1 = 0
             </if>
         </where>

@@ -2,6 +2,8 @@ package com.project.evaluation.vo.RuleCategory;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 /**
  * 更新规则分类请求体
  */
@@ -22,4 +24,12 @@ public class UpdateRuleCategoryReq {
      * 分类父级 id
      */
     private Integer parentId;
+
+    private BigDecimal scoreCap;
+
+    private Integer studentVisible;
+
+    private Integer sortOrder;
+
+    private BigDecimal categoryBaseScore;
 }

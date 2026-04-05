@@ -2,12 +2,11 @@ package com.project.evaluation.entity;
 
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
 public class RuleCategory {
-
-    // TODO: 将非数据库字段添加进来
 
     /**
      * 规则分类 id
@@ -28,6 +27,18 @@ public class RuleCategory {
      * 分类父级 id
      */
     private Integer parentId;
+
+    /** 该分类子树内加分合计上限；null 表示不限制 */
+    private BigDecimal scoreCap;
+
+    /** 1=学生端展示；0=隐藏（子树一并隐藏） */
+    private Integer studentVisible;
+
+    /** 同级排序，越小越靠前 */
+    private Integer sortOrder;
+
+    /** 该分类节点的基础分（计入本节点小计，并与子分类汇总） */
+    private BigDecimal categoryBaseScore;
 
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

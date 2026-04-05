@@ -1,5 +1,6 @@
 package com.project.evaluation.mapper;
 
+import com.project.evaluation.vo.EvaluationApproval.ApplyItemMaterialJoinVO;
 import com.project.evaluation.vo.EvaluationApproval.ApplyItemScoringSnapshot;
 import com.project.evaluation.vo.EvaluationApproval.EvaluationApplyItemVO;
 import org.apache.ibatis.annotations.Insert;
@@ -31,11 +32,14 @@ public interface EvaluationApprovalMapper {
             ai.status AS itemStatus,
             ai.rule_item_id AS ruleItemId,
             ri.item_name AS ruleItemName,
+            ai.custom_name AS customName,
+            ai.remark AS itemRemark,
             ai.score AS score,
             ar.auditor_id AS auditorId,
             au.student_id AS auditorNo,
             au.real_name AS auditorName,
             a.create_time AS applyCreateTime,
+            a.update_time AS applyUpdateTime,
             ai.create_time AS itemCreateTime
         FROM evaluation_apply_item ai
         INNER JOIN evaluation_apply a ON ai.apply_id = a.id
@@ -57,14 +61,17 @@ public interface EvaluationApprovalMapper {
             <if test='studentNo != null and studentNo != ""'>
                 AND u.student_id LIKE CONCAT('%', #{studentNo}, '%')
             </if>
-            <if test='periodId != null'>
-                AND a.period_id = #{periodId}
+            <if test='periodIds != null and periodIds.size() &gt; 0'>
+                AND a.period_id IN
+                <foreach collection="periodIds" item="pid" open="(" separator="," close=")">#{pid}</foreach>
             </if>
-            <if test='applyStatus != null and applyStatus != ""'>
-                AND a.status = #{applyStatus}
+            <if test='applyStatuses != null and applyStatuses.size() &gt; 0'>
+                AND a.status IN
+                <foreach collection="applyStatuses" item="st" open="(" separator="," close=")">#{st}</foreach>
             </if>
-            <if test='itemStatus != null and itemStatus != ""'>
-                AND ai.status = #{itemStatus}
+            <if test='itemStatuses != null and itemStatuses.size() &gt; 0'>
+                AND ai.status IN
+                <foreach collection="itemStatuses" item="st" open="(" separator="," close=")">#{st}</foreach>
             </if>
             <if test='collegeId != null'>
                 AND u.college_id = #{collegeId}
@@ -78,11 +85,25 @@ public interface EvaluationApprovalMapper {
         """)
     List<EvaluationApplyItemVO> pageApplyItems(
             @Param("studentNo") String studentNo,
-            @Param("periodId") Long periodId,
-            @Param("applyStatus") String applyStatus,
-            @Param("itemStatus") String itemStatus,
+            @Param("periodIds") List<Long> periodIds,
+            @Param("applyStatuses") List<String> applyStatuses,
+            @Param("itemStatuses") List<String> itemStatuses,
             @Param("collegeId") Long collegeId,
             @Param("classId") Long classId);
+
+    @Select("""
+            <script>
+            SELECT apply_item_id AS applyItemId, file_name AS fileName, file_url AS fileUrl
+            FROM evaluation_apply_material
+            WHERE apply_item_id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            ORDER BY apply_item_id ASC, id ASC
+            </script>
+            """)
+    List<ApplyItemMaterialJoinVO> listMaterialsByApplyItemIds(@Param("ids") List<Long> ids);
+
+    @Select("SELECT COUNT(1) FROM evaluation_apply_material WHERE file_url = #{key}")
+    int countMaterialByFileUrl(@Param("key") String key);
 
     @Update("UPDATE evaluation_apply_item SET status = #{status} WHERE id = #{applyItemId}")
     int updateApplyItemStatus(@Param("applyItemId") Long applyItemId, @Param("status") String status);
@@ -94,8 +115,10 @@ public interface EvaluationApprovalMapper {
             @Param("score") BigDecimal score);
 
     @Select("""
-            SELECT ai.source_type AS sourceType,
+            SELECT ai.id AS applyItemId,
+                   ai.source_type AS sourceType,
                    ai.rule_item_id AS ruleItemId,
+                   IFNULL(ai.score, 0) AS persistedScore,
                    ri.base_score AS baseScore,
                    IFNULL(ri.coeff, 1) AS coeff,
                    ri.score_mode AS scoreMode
@@ -105,6 +128,23 @@ public interface EvaluationApprovalMapper {
             LIMIT 1
             """)
     ApplyItemScoringSnapshot selectScoringSnapshot(@Param("applyItemId") Long applyItemId);
+
+    @Select("""
+            <script>
+            SELECT ai.id AS applyItemId,
+                   ai.source_type AS sourceType,
+                   ai.rule_item_id AS ruleItemId,
+                   IFNULL(ai.score, 0) AS persistedScore,
+                   ri.base_score AS baseScore,
+                   IFNULL(ri.coeff, 1) AS coeff,
+                   ri.score_mode AS scoreMode
+            FROM evaluation_apply_item ai
+            LEFT JOIN evaluation_rule_item ri ON ai.rule_item_id = ri.id
+            WHERE ai.id IN
+            <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+            </script>
+            """)
+    List<ApplyItemScoringSnapshot> selectScoringSnapshotsByApplyItemIds(@Param("ids") List<Long> ids);
 
     @Insert("""
         INSERT INTO evaluation_audit_record

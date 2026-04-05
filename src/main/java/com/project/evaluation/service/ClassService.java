@@ -24,6 +24,6 @@ public interface ClassService {
 
     List<Class> listByIds(List<Integer> ids);
 
-    PageBean<Class> paginationQuery(Integer pageNum, Integer pageSize, Integer collegeId, Integer gradeYear);
+    PageBean<Class> paginationQuery(Integer pageNum, Integer pageSize, List<Integer> collegeIds, List<Integer> gradeYears);
 
 }

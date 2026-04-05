@@ -79,7 +79,7 @@ public interface RoleMapper {
          * @param status
          * @return
          */
-        List<Role> paginationQuery(Integer status);
+        List<Role> paginationQuery(@Param("statuses") List<Integer> statuses);
 
         /**
          * 删除角色的所有权限

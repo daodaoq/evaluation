@@ -5,6 +5,7 @@ import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.AcademicScoreService;
 import com.project.evaluation.vo.AcademicScore.AddAcademicScoreReq;
+import com.project.evaluation.vo.AcademicScore.ClassOptionVO;
 import com.project.evaluation.vo.AcademicScore.DeleteAcademicScoreReq;
 import com.project.evaluation.vo.AcademicScore.MyAcademicScoreVO;
 import com.project.evaluation.vo.AcademicScore.UpdateAcademicScoreReq;
@@ -13,6 +14,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Collections;
+import java.util.List;
+
 @RestController
 @RequestMapping("/academic-scores")
 public class AcademicScoreController {
@@ -20,16 +24,28 @@ public class AcademicScoreController {
     @Autowired
     private AcademicScoreService academicScoreService;
 
+    /**
+     * 智育管理页：班级下拉数据（学院 + 班级名称），无需再手输班级
+     */
+    @GetMapping("/classes")
+    @PreAuthorize("hasAuthority('sys:academic:menu')")
+    @CrossOrigin
+    public Result<List<ClassOptionVO>> listClassesForAcademic() {
+        return Result.success(academicScoreService.listClassOptionsForAcademic());
+    }
+
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:academic:menu')")
     @CrossOrigin
     public Result<PageBean<AcademicScore>> list(@RequestParam Integer pageNum,
                                                 @RequestParam Integer pageSize,
-                                                @RequestParam(required = false) Long periodId,
+                                                @RequestParam(required = false) List<Long> periodIds,
                                                 @RequestParam(required = false) String studentNo,
-                                                @RequestParam(required = false) String className,
+                                                @RequestParam(required = false) List<String> classNames,
                                                 @RequestParam(required = false) String studentName) {
-        return Result.success(academicScoreService.pageQuery(pageNum, pageSize, periodId, studentNo, className, studentName));
+        List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
+        List<String> cns = classNames == null ? Collections.emptyList() : classNames;
+        return Result.success(academicScoreService.pageQuery(pageNum, pageSize, pids, studentNo, cns, studentName));
     }
 
     @PostMapping

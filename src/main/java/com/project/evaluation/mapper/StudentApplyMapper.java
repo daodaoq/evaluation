@@ -111,21 +111,37 @@ public interface StudentApplyMapper {
     List<MyApplyVO> listMyApplyItems(@Param("studentUserId") Long studentUserId);
 
     @Select("""
-            SELECT IFNULL(ai.score, 0) AS score,
+            SELECT ri.id AS ruleItemId,
+                   COALESCE(ri.item_name, ai.custom_name) AS itemName,
+                   ri.level AS level,
+                   ri.dedupe_group AS dedupeGroup,
+                   IFNULL(ai.score, 0) AS score,
                    ai.source_type AS sourceType,
+                   ai.custom_name AS customName,
                    UPPER(IFNULL(ri.module_code, '')) AS moduleCode,
                    UPPER(IFNULL(ri.submodule_code, '')) AS submoduleCode,
                    ri.base_score AS baseScore,
                    IFNULL(ri.coeff, 1) AS coeff,
-                   ri.score_mode AS scoreMode
+                   ri.score_mode AS scoreMode,
+                   ri.item_category AS itemCategory
             FROM evaluation_apply a
             INNER JOIN evaluation_apply_item ai ON ai.apply_id = a.id
             LEFT JOIN evaluation_rule_item ri ON ai.rule_item_id = ri.id
             WHERE a.student_id = #{studentUserId}
               AND a.period_id = #{periodId}
               AND ai.status = 'APPROVED'
+              AND a.id = (
+                  SELECT MAX(a2.id) FROM evaluation_apply a2
+                  WHERE a2.student_id = a.student_id AND a2.period_id = a.period_id
+              )
             """)
     List<StudentApplyApprovedScoreRow> listApprovedScoresForPeriod(
             @Param("studentUserId") Long studentUserId,
             @Param("periodId") Long periodId);
+
+    @Select("SELECT item_category FROM evaluation_rule_item WHERE id = #{ruleItemId} LIMIT 1")
+    Integer findItemCategoryByRuleItemId(@Param("ruleItemId") Long ruleItemId);
+
+    @Select("SELECT rule_id FROM evaluation_rule_item WHERE id = #{ruleItemId} LIMIT 1")
+    Integer findRuleIdByRuleItemId(@Param("ruleItemId") Long ruleItemId);
 }

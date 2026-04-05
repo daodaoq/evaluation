@@ -50,22 +50,33 @@ public interface ClassEvaluationScoreMapper {
         <script>
         SELECT
             a.student_id AS studentUserId,
-            ri.item_name AS itemName,
-            ri.module_code AS moduleCode,
+            ri.id AS ruleItemId,
+            COALESCE(ri.item_name, ai.custom_name) AS itemName,
+            COALESCE(ri.module_code,
+                CASE WHEN ai.source_type = 'CUSTOM' AND TRIM(IFNULL(ai.custom_name,'')) = '任职分' THEN 'MORAL' END
+            ) AS moduleCode,
+            ri.submodule_code AS submoduleCode,
             ri.level AS level,
             ri.base_score AS baseScore,
             ri.coeff AS coeff,
-            ri.score_mode AS scoreMode
+            ri.score_mode AS scoreMode,
+            ri.dedupe_group AS dedupeGroup,
+            IFNULL(ai.score, 0) AS persistedScore,
+            ai.source_type AS sourceType,
+            ri.item_category AS itemCategory
         FROM evaluation_apply_item ai
         INNER JOIN evaluation_apply a ON ai.apply_id = a.id
         INNER JOIN sys_user u ON a.student_id = u.id
-        INNER JOIN evaluation_rule_item ri ON ai.rule_item_id = ri.id
+        LEFT JOIN evaluation_rule_item ri ON ai.rule_item_id = ri.id
         WHERE a.period_id = #{periodId}
           AND ai.status = 'APPROVED'
-          AND ai.source_type = 'RULE'
           AND a.id = (
             SELECT MAX(a2.id) FROM evaluation_apply a2
             WHERE a2.student_id = a.student_id AND a2.period_id = a.period_id
+          )
+          AND (
+            (ai.source_type = 'RULE' AND ri.id IS NOT NULL)
+            OR (ai.source_type = 'CUSTOM' AND TRIM(IFNULL(ai.custom_name,'')) = '任职分')
           )
         <if test="studentUserIds != null and studentUserIds.size() &gt; 0">
           AND a.student_id IN

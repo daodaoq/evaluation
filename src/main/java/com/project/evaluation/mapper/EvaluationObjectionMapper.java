@@ -50,8 +50,15 @@ public interface EvaluationObjectionMapper {
             INNER JOIN sys_user u ON o.student_user_id = u.id
             LEFT JOIN sys_class cl ON u.class_id = cl.id
             <where>
-                <if test="periodId != null">AND o.period_id = #{periodId}</if>
-                <if test="status != null and status != ''">AND o.status = #{status}</if>
+                <if test="periodIds != null and periodIds.size() &gt; 0">
+                    AND o.period_id IN
+                    <foreach collection="periodIds" item="pid" open="(" separator="," close=")">#{pid}</foreach>
+                </if>
+                <if test="statuses != null and statuses.size() &gt; 0">
+                    AND o.status IN
+                    <foreach collection="statuses" item="st" open="(" separator="," close=")">#{st}</foreach>
+                </if>
+                <if test="collegeId != null">AND u.college_id = #{collegeId}</if>
                 <if test="classIds != null and classIds.size() &gt; 0">
                     AND u.class_id IN
                     <foreach collection="classIds" item="cid" open="(" separator="," close=")">#{cid}</foreach>
@@ -61,8 +68,9 @@ public interface EvaluationObjectionMapper {
             ORDER BY o.id DESC
             </script>
             """)
-    List<ObjectionRowVO> pageRows(@Param("periodId") Long periodId,
-                                  @Param("status") String status,
+    List<ObjectionRowVO> pageRows(@Param("periodIds") List<Long> periodIds,
+                                  @Param("statuses") List<String> statuses,
+                                  @Param("collegeId") Long collegeId,
                                   @Param("classId") Long classId,
                                   @Param("classIds") List<Integer> classIds);
 }

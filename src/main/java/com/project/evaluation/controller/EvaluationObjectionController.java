@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.List;
+
 @RestController
 @RequestMapping("/evaluation-objection")
 public class EvaluationObjectionController {
@@ -22,10 +25,13 @@ public class EvaluationObjectionController {
     public Result<PageBean<ObjectionRowVO>> page(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
-            @RequestParam(required = false) Long periodId,
-            @RequestParam(required = false) String status,
+            @RequestParam(required = false) List<Long> periodIds,
+            @RequestParam(required = false) List<String> statuses,
+            @RequestParam(required = false) Long collegeId,
             @RequestParam(required = false) Long classId) {
-        return Result.success(evaluationObjectionService.page(pageNum, pageSize, periodId, status, classId));
+        List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
+        List<String> sts = statuses == null ? Collections.emptyList() : statuses;
+        return Result.success(evaluationObjectionService.page(pageNum, pageSize, pids, sts, collegeId, classId));
     }
 
     @PostMapping("/handle")

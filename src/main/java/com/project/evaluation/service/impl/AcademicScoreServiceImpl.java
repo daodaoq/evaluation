@@ -6,11 +6,16 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.AcademicScore;
 import com.project.evaluation.entity.PageBean;
+import com.project.evaluation.entity.Class;
+import com.project.evaluation.entity.College;
 import com.project.evaluation.mapper.AcademicScoreMapper;
 import com.project.evaluation.service.AcademicScoreService;
+import com.project.evaluation.service.ClassService;
+import com.project.evaluation.service.CollegeService;
 import com.project.evaluation.service.PeriodWorkflowService;
 import com.project.evaluation.utils.SecurityContextUtil;
 import com.project.evaluation.vo.AcademicScore.AddAcademicScoreReq;
+import com.project.evaluation.vo.AcademicScore.ClassOptionVO;
 import com.project.evaluation.vo.AcademicScore.MyAcademicScoreVO;
 import com.project.evaluation.vo.AcademicScore.UpdateAcademicScoreReq;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +26,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class AcademicScoreServiceImpl implements AcademicScoreService {
@@ -32,10 +44,17 @@ public class AcademicScoreServiceImpl implements AcademicScoreService {
     @Autowired
     private PeriodWorkflowService periodWorkflowService;
 
+    @Autowired
+    private ClassService classService;
+
+    @Autowired
+    private CollegeService collegeService;
+
     @Override
-    public PageBean<AcademicScore> pageQuery(Integer pageNum, Integer pageSize, Long periodId, String studentNo, String className, String studentName) {
+    public PageBean<AcademicScore> pageQuery(Integer pageNum, Integer pageSize, List<Long> periodIds, String studentNo,
+                                             List<String> classNames, String studentName) {
         PageHelper.startPage(pageNum, pageSize);
-        List<AcademicScore> list = academicScoreMapper.pageQuery(periodId, studentNo, className, studentName);
+        List<AcademicScore> list = academicScoreMapper.pageQuery(periodIds, studentNo, classNames, studentName);
         PageInfo<AcademicScore> pageInfo = new PageInfo<>(list);
         return new PageBean<>(pageInfo.getTotal(), pageInfo.getList());
     }
@@ -184,6 +203,40 @@ public class AcademicScoreServiceImpl implements AcademicScoreService {
         if (periodId == null || periodId <= 0) throw new IllegalArgumentException("请选择有效综测周期");
         Integer userId = SecurityContextUtil.getCurrentUserId();
         return academicScoreMapper.findMyScore(userId.longValue(), periodId);
+    }
+
+    @Override
+    public List<ClassOptionVO> listClassOptionsForAcademic() {
+        List<Class> classes = classService.classList();
+        if (classes == null || classes.isEmpty()) {
+            return List.of();
+        }
+        List<College> colleges = collegeService.collegeList();
+        Map<Integer, String> collegeNames = new HashMap<>();
+        if (colleges != null) {
+            for (College col : colleges) {
+                if (col != null && col.getId() != null) {
+                    collegeNames.putIfAbsent(col.getId(), col.getCollegeName() != null ? col.getCollegeName() : "");
+                }
+            }
+        }
+        List<ClassOptionVO> out = new ArrayList<>();
+        for (Class c : classes) {
+            if (c == null) {
+                continue;
+            }
+            ClassOptionVO vo = new ClassOptionVO();
+            vo.setId(c.getId());
+            vo.setClassName(c.getClassName());
+            vo.setCollegeId(c.getCollegeId());
+            vo.setCollegeName(collegeNames.getOrDefault(c.getCollegeId(), ""));
+            vo.setGradeYear(c.getGradeYear());
+            out.add(vo);
+        }
+        out.sort(Comparator
+                .comparing((ClassOptionVO v) -> v.getCollegeName() == null ? "" : v.getCollegeName())
+                .thenComparing(v -> v.getClassName() == null ? "" : v.getClassName()));
+        return out;
     }
 
     private AcademicScore toEntity(Long periodId, String studentNo, String className, String studentName, BigDecimal intellectualScore) {

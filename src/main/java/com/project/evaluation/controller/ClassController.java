@@ -106,10 +106,10 @@ public class ClassController {
     public Result<PageBean<Class>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
-            @RequestParam(required = false) Integer collegeId,
-            @RequestParam(required = false) Integer gradeYear
+            @RequestParam(required = false) List<Integer> collegeIds,
+            @RequestParam(required = false) List<Integer> gradeYears
     ) {
-        PageBean<Class> pb = classService.paginationQuery(pageNum, pageSize, collegeId, gradeYear);
+        PageBean<Class> pb = classService.paginationQuery(pageNum, pageSize, collegeIds, gradeYears);
         return Result.success(pb);
     }
 }

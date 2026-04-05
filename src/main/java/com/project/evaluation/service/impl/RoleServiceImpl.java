@@ -102,10 +102,10 @@ public class RoleServiceImpl implements RoleService {
      * @return
      */
     @Override
-    public PageBean<Role> paginationQuery(Integer pageNum, Integer pageSize, Integer status) {
+    public PageBean<Role> paginationQuery(Integer pageNum, Integer pageSize, List<Integer> statuses) {
         PageBean<Role> pb = new PageBean<>();
         PageHelper.startPage(pageNum, pageSize);
-        List<Role> roles = roleMapper.paginationQuery(status);
+        List<Role> roles = roleMapper.paginationQuery(statuses);
         PageInfo<Role> info = new PageInfo<>(roles);
         pb.setTotal(info.getTotal());
         pb.setItems(info.getList());

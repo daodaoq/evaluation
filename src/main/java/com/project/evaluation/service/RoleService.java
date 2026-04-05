@@ -20,7 +20,7 @@ public interface RoleService {
 
     List<Role> roleList();
 
-    PageBean<Role> paginationQuery(Integer pageNum, Integer pageSize, Integer status);
+    PageBean<Role> paginationQuery(Integer pageNum, Integer pageSize, List<Integer> statuses);
 
     void assignPermissions(Integer roleId, List<Integer> permIds);
 

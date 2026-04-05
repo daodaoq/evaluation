@@ -2,7 +2,6 @@ package com.project.evaluation.entity;
 
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -37,21 +36,6 @@ public class Rule {
      * 是否启用
      */
     private Integer status;
-
-    /**
-     * 德育权重（细则默认 10%）
-     */
-    private BigDecimal moralWeight;
-
-    /**
-     * 学业权重（细则默认 70%）
-     */
-    private BigDecimal academicWeight;
-
-    /**
-     * 素质能力权重（细则默认 20%）
-     */
-    private BigDecimal qualityWeight;
 
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

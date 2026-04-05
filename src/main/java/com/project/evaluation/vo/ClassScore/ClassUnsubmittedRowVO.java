@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class ClassUnsubmittedRowVO {
+    private Long periodId;
     private Long userId;
     private String studentNo;
     private String studentName;

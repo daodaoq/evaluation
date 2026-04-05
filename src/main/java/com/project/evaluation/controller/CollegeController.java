@@ -114,9 +114,9 @@ public class CollegeController {
     public Result<PageBean<College>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
-            @RequestParam(required = false) Integer status
+            @RequestParam(required = false) List<Integer> statuses
     ) {
-        PageBean<College> pb = collegeService.paginationQuery(pageNum, pageSize, status);
+        PageBean<College> pb = collegeService.paginationQuery(pageNum, pageSize, statuses);
         return Result.success(pb);
     }
 }

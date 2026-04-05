@@ -4,7 +4,9 @@ import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Rule;
+import com.project.evaluation.entity.RuleCategory;
 import com.project.evaluation.entity.RuleItem;
+import com.project.evaluation.mapper.RuleCategoryMapper;
 import com.project.evaluation.mapper.RuleMapper;
 import com.project.evaluation.mapper.RuleItemMapper;
 import com.project.evaluation.service.RuleItemService;
@@ -19,6 +21,7 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +34,9 @@ public class RuleItemServiceImpl implements RuleItemService {
 
     @Autowired
     private RuleMapper ruleMapper;
+
+    @Autowired
+    private RuleCategoryMapper ruleCategoryMapper;
 
     /**
      * 添加规则项
@@ -167,18 +173,78 @@ public class RuleItemServiceImpl implements RuleItemService {
         if (targetRule == null || targetRule.getId() == null) {
             targetRule = new Rule();
             targetRule.setPeriodId(targetPeriodId);
-            targetRule.setRuleName(sourceRule.getRuleName() + "（复制）");
+            targetRule.setRuleName(sourceRule.getRuleName() + "(复制)");
             targetRule.setVersionCode(StringUtils.hasText(sourceRule.getVersionCode()) ? sourceRule.getVersionCode() : "v1");
             targetRule.setStatus(1);
-            targetRule.setMoralWeight(sourceRule.getMoralWeight());
-            targetRule.setAcademicWeight(sourceRule.getAcademicWeight());
-            targetRule.setQualityWeight(sourceRule.getQualityWeight());
             ruleMapper.insertRule(targetRule);
         }
         if (Boolean.TRUE.equals(overwrite)) {
             ruleItemMapper.deleteByRuleId(targetRule.getId());
         }
-        return ruleItemMapper.copyByRuleId(sourceRule.getId(), targetRule.getId());
+        List<RuleItem> items = ruleItemMapper.listByRuleId(sourceRule.getId());
+        if (items.isEmpty()) {
+            return 0;
+        }
+        List<RuleCategory> srcCats = ruleCategoryMapper.listByRuleId(sourceRule.getId());
+        List<RuleCategory> tgtCats = ruleCategoryMapper.listByRuleId(targetRule.getId());
+        Map<Integer, Integer> catMap;
+        if (srcCats.isEmpty()) {
+            boolean orphan = false;
+            for (RuleItem one : items) {
+                Integer cat = one.getItemCategory();
+                if (cat != null && cat != 0) {
+                    orphan = true;
+                    break;
+                }
+            }
+            if (orphan) {
+                throw new IllegalStateException("来源规则项引用了分类，但来源规则下没有分类数据，请先在规则分类管理中维护分类");
+            }
+            catMap = Collections.emptyMap();
+        } else {
+            catMap = RuleCategoryTreeUtils.buildSourceToTargetIdMap(srcCats, tgtCats);
+        }
+        int n = 0;
+        for (RuleItem item : items) {
+            insertRuleItemCopy(item, targetRule.getId(), catMap);
+            n++;
+        }
+        return n;
+    }
+
+    /**
+     * @param row 来源规则下的规则项（仅读取字段，不写回）
+     */
+    private void insertRuleItemCopy(RuleItem row, Integer targetRuleId, Map<Integer, Integer> catMap) {
+        AddRuleItemReq req = new AddRuleItemReq();
+        req.setRuleId(targetRuleId == null ? null : Long.valueOf(targetRuleId));
+        req.setItemName(row.getItemName());
+        req.setItemType(row.getItemType());
+        Integer ic = row.getItemCategory();
+        if (ic == null || ic == 0) {
+            req.setItemCategory(0);
+        } else {
+            Integer mapped = catMap.get(ic);
+            if (mapped == null) {
+                throw new IllegalStateException("规则项引用的分类无法对齐到目标学期，请先在规则分类管理中从来源学期复制分类（建议勾选覆盖）");
+            }
+            req.setItemCategory(mapped);
+        }
+        req.setLevel(row.getLevel());
+        req.setBaseScore(row.getBaseScore());
+        req.setIsCompetition(row.getIsCompetition());
+        req.setNeedMaterial(row.getNeedMaterial());
+        req.setStatus(row.getStatus());
+        req.setScoreMode(StringUtils.hasText(row.getScoreMode()) ? row.getScoreMode() : "ADD");
+        req.setDedupeGroup(row.getDedupeGroup());
+        BigDecimal coeffVal = row.getCoeff();
+        if (coeffVal == null) {
+            coeffVal = new BigDecimal("1.000");
+        }
+        req.setCoeff(coeffVal);
+        req.setModuleCode(row.getModuleCode());
+        req.setSubmoduleCode(row.getSubmoduleCode());
+        ruleItemMapper.addRuleItem(req);
     }
 
     @Override

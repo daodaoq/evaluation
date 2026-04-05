@@ -11,13 +11,7 @@ ALTER TABLE evaluation_period
     MODIFY COLUMN start_time DATETIME NOT NULL COMMENT '开始时间',
     MODIFY COLUMN end_time   DATETIME NOT NULL COMMENT '结束时间';
 
--- 2) 规则总览补充细则核心权重（德育10、学业70、素质20）
-ALTER TABLE evaluation_rule
-    ADD COLUMN IF NOT EXISTS moral_weight DECIMAL(5,2) NOT NULL DEFAULT 10.00 COMMENT '德育权重',
-    ADD COLUMN IF NOT EXISTS academic_weight DECIMAL(5,2) NOT NULL DEFAULT 70.00 COMMENT '学业权重',
-    ADD COLUMN IF NOT EXISTS quality_weight DECIMAL(5,2) NOT NULL DEFAULT 20.00 COMMENT '素质能力权重';
-
--- 3) 规则项补充“同类不重复取最高”“互斥组”“次数折算”等细则控制字段
+-- 2) 规则项补充“同类不重复取最高”“互斥组”“次数折算”等细则控制字段
 ALTER TABLE evaluation_rule_item
     ADD COLUMN IF NOT EXISTS score_mode VARCHAR(32) NOT NULL DEFAULT 'ADD' COMMENT '计分方式：ADD/SUB/MAX_ONLY',
     ADD COLUMN IF NOT EXISTS dedupe_group VARCHAR(64) DEFAULT NULL COMMENT '同类去重组（同组取最高）',
@@ -25,7 +19,7 @@ ALTER TABLE evaluation_rule_item
     ADD COLUMN IF NOT EXISTS module_code VARCHAR(32) DEFAULT NULL COMMENT '模块编码：MORAL/ACADEMIC/QUALITY',
     ADD COLUMN IF NOT EXISTS submodule_code VARCHAR(32) DEFAULT NULL COMMENT '子模块编码';
 
--- 4) 申报项补充证据元信息（便于防重复、复核与追溯）
+-- 3) 申报项补充证据元信息（便于防重复、复核与追溯）
 ALTER TABLE evaluation_apply_item
     ADD COLUMN IF NOT EXISTS evidence_no VARCHAR(128) DEFAULT NULL COMMENT '证书/文件编号',
     ADD COLUMN IF NOT EXISTS award_level VARCHAR(64) DEFAULT NULL COMMENT '奖项级别',
@@ -33,13 +27,13 @@ ALTER TABLE evaluation_apply_item
     ADD COLUMN IF NOT EXISTS occurred_time DATETIME DEFAULT NULL COMMENT '事件发生时间',
     ADD COLUMN IF NOT EXISTS remark VARCHAR(255) DEFAULT NULL COMMENT '申报备注';
 
--- 5) 结果表补充分项得分（便于德育/学业/素质展示与备案）
+-- 4) 结果表补充分项得分（便于德育/学业/素质展示与备案）
 ALTER TABLE evaluation_result
     ADD COLUMN IF NOT EXISTS moral_score DECIMAL(6,2) NOT NULL DEFAULT 0.00 COMMENT '德育分',
     ADD COLUMN IF NOT EXISTS academic_score DECIMAL(6,2) NOT NULL DEFAULT 0.00 COMMENT '学业分',
     ADD COLUMN IF NOT EXISTS quality_score DECIMAL(6,2) NOT NULL DEFAULT 0.00 COMMENT '素质能力分';
 
--- 6) 公示与异议（细则第十四、十五条）
+-- 5) 公示与异议（细则第十四、十五条）
 CREATE TABLE IF NOT EXISTS evaluation_publicity (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '公示ID',
     period_id BIGINT NOT NULL COMMENT '综测周期ID',
@@ -64,7 +58,7 @@ CREATE TABLE IF NOT EXISTS evaluation_objection (
     update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) COMMENT='综测异议与复核表';
 
--- 7) 常用索引
+-- 6) 常用索引
 CREATE INDEX IF NOT EXISTS idx_apply_student_period ON evaluation_apply(student_id, period_id);
 CREATE INDEX IF NOT EXISTS idx_apply_item_apply_status ON evaluation_apply_item(apply_id, status);
 CREATE INDEX IF NOT EXISTS idx_audit_apply_item ON evaluation_audit_record(apply_item_id);

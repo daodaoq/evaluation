@@ -80,7 +80,7 @@ public class ApplyAppealServiceImpl implements ApplyAppealService {
 
     @Override
     public PageBean<ApplyAppealRowVO> pageAppeals(Integer pageNum, Integer pageSize,
-                                                  String studentNo, Long periodId, String appealStatus,
+                                                  String studentNo, List<Long> periodIds, List<String> appealStatuses,
                                                   Long collegeId, Long classId) {
         ReviewScope scope = resolveReviewScope(classId);
         if (scope.emptyResult()) {
@@ -88,7 +88,7 @@ public class ApplyAppealServiceImpl implements ApplyAppealService {
         }
         try (Page<Object> ignored = PageHelper.startPage(pageNum, pageSize)) {
             List<ApplyAppealRowVO> rows = applyAppealMapper.pageAppeals(
-                    studentNo, periodId, appealStatus, collegeId, classId, scope.classIdsFilter());
+                    studentNo, periodIds, appealStatuses, collegeId, classId, scope.classIdsFilter());
             PageInfo<ApplyAppealRowVO> pageInfo = new PageInfo<>(rows);
             return new PageBean<>(pageInfo.getTotal(), pageInfo.getList());
         }

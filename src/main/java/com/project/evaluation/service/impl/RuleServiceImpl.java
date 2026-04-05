@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -29,15 +28,6 @@ public class RuleServiceImpl implements RuleService {
      */
     @Override
     public void addRule(AddRuleReq addRuleReq) {
-        if (addRuleReq.getMoralWeight() == null) {
-            addRuleReq.setMoralWeight(new BigDecimal("10.00"));
-        }
-        if (addRuleReq.getAcademicWeight() == null) {
-            addRuleReq.setAcademicWeight(new BigDecimal("70.00"));
-        }
-        if (addRuleReq.getQualityWeight() == null) {
-            addRuleReq.setQualityWeight(new BigDecimal("20.00"));
-        }
         ruleMapper.addRule(addRuleReq);
         log.info("添加成功：{}",addRuleReq);
     }
@@ -67,21 +57,6 @@ public class RuleServiceImpl implements RuleService {
      */
     @Override
     public void updateRule(Integer id, UpdateRuleReq updateRuleReq) {
-        Rule existing = ruleMapper.findRuleById(id);
-        if (existing != null) {
-            if (updateRuleReq.getMoralWeight() == null) {
-                updateRuleReq.setMoralWeight(
-                        existing.getMoralWeight() != null ? existing.getMoralWeight() : new BigDecimal("10.00"));
-            }
-            if (updateRuleReq.getAcademicWeight() == null) {
-                updateRuleReq.setAcademicWeight(
-                        existing.getAcademicWeight() != null ? existing.getAcademicWeight() : new BigDecimal("70.00"));
-            }
-            if (updateRuleReq.getQualityWeight() == null) {
-                updateRuleReq.setQualityWeight(
-                        existing.getQualityWeight() != null ? existing.getQualityWeight() : new BigDecimal("20.00"));
-            }
-        }
         ruleMapper.updateRule(id, updateRuleReq);
     }
 
@@ -129,12 +104,12 @@ public class RuleServiceImpl implements RuleService {
      * @return
      */
     @Override
-    public PageBean<Rule> paginationQuery(Integer pageNum, Integer pageSize, Integer periodId, Integer status) {
+    public PageBean<Rule> paginationQuery(Integer pageNum, Integer pageSize, List<Integer> periodIds, List<Integer> statuses) {
         PageBean<Rule> pb = new PageBean<>();
 
         PageHelper.startPage(pageNum, pageSize);
 
-        List<Rule> rules = ruleMapper.paginationQuery(periodId, status);
+        List<Rule> rules = ruleMapper.paginationQuery(periodIds, statuses);
 
         PageInfo<Rule> info = new PageInfo<>(rules);
         pb.setTotal(info.getTotal());

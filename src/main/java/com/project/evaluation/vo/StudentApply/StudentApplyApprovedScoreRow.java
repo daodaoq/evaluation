@@ -7,12 +7,20 @@ import java.math.BigDecimal;
 /** 单条已通过申报项得分（用于按模块汇总） */
 @Data
 public class StudentApplyApprovedScoreRow {
+    private Long ruleItemId;
+    private String itemName;
+    private String level;
+    private String dedupeGroup;
+
     private BigDecimal score;
     private String sourceType;
+    /** 非细则项名称；任职分时用于归入德育汇总 */
+    private String customName;
     private String moduleCode;
     private String submoduleCode;
-    /** 以下字段来自细则，用于库内 score 仍为 0 时按规则回算（历史通过记录） */
     private BigDecimal baseScore;
     private BigDecimal coeff;
     private String scoreMode;
+    /** 细则项所属分类 */
+    private Integer itemCategory;
 }

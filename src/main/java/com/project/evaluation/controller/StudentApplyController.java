@@ -7,15 +7,20 @@ import com.project.evaluation.service.ApplyAppealService;
 import com.project.evaluation.service.EvaluationObjectionService;
 import com.project.evaluation.service.StudentApplyService;
 import com.project.evaluation.vo.ApplyAppeal.SubmitAppealReq;
+import com.project.evaluation.vo.StudentApply.MaterialUploadVO;
 import com.project.evaluation.vo.StudentApply.MyApplyVO;
 import com.project.evaluation.vo.StudentApply.RuleItemSimpleVO;
+import com.project.evaluation.vo.StudentApply.StudentRuleCategoryTreeNodeVO;
 import com.project.evaluation.vo.StudentApply.StudentPeriodWorkflowVO;
+import com.project.evaluation.vo.StudentApply.StudentCategoryScoreOverviewVO;
 import com.project.evaluation.vo.StudentApply.StudentSectionScoreVO;
 import com.project.evaluation.vo.StudentApply.SubmitApplyReq;
 import com.project.evaluation.vo.StudentApply.SubmitObjectionReq;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -43,6 +48,16 @@ public class StudentApplyController {
     }
 
     /**
+     * 学生端：按可见分类树返回细则项（用于树形选择）
+     */
+    @GetMapping("/category-rule-tree")
+    @PreAuthorize("hasAuthority('sys:student:menu')")
+    @CrossOrigin
+    public Result<List<StudentRuleCategoryTreeNodeVO>> categoryRuleTree(@RequestParam Long periodId) {
+        return Result.success(studentApplyService.listRuleItemCategoryTree(periodId));
+    }
+
+    /**
      * 学生端：提交申报（仅细则项，或非细则项+材料+备注）
      */
     @PostMapping("/submit")
@@ -51,6 +66,26 @@ public class StudentApplyController {
     public Result<?> submit(@RequestBody SubmitApplyReq req) {
         studentApplyService.submitApply(req);
         return Result.success();
+    }
+
+    /**
+     * 学生端：上传申报材料至 MinIO（返回对象键，提交申报时随材料列表一并写入）
+     */
+    @PostMapping(value = "/upload-material", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAuthority('sys:student:menu')")
+    @CrossOrigin
+    public Result<MaterialUploadVO> uploadMaterial(@RequestPart("file") MultipartFile file) {
+        return Result.success(studentApplyService.uploadApplyMaterial(file));
+    }
+
+    /**
+     * 学生端：为本人已上传的材料生成短期可预览地址（图片/PDF 等）
+     */
+    @GetMapping("/material/preview-url")
+    @PreAuthorize("hasAuthority('sys:student:menu')")
+    @CrossOrigin
+    public Result<String> materialPreviewUrl(@RequestParam("key") String key) {
+        return Result.success(studentApplyService.buildMaterialPreviewUrl(key));
     }
 
     /**
@@ -64,13 +99,23 @@ public class StudentApplyController {
     }
 
     /**
-     * 学生端：当前周期各综测大类已得分（申报项仅统计已通过审核）
+     * 学生端：当前周期得分扁平列表（按分类层级缩进；申报仅统计已通过）
      */
     @GetMapping("/section-scores")
     @PreAuthorize("hasAuthority('sys:student:menu')")
     @CrossOrigin
     public Result<List<StudentSectionScoreVO>> sectionScores(@RequestParam Long periodId) {
         return Result.success(studentApplyService.listMySectionScores(periodId));
+    }
+
+    /**
+     * 学生端：当前周期以规则分类为单位的得分树（含分类基础分、细则得分、上限截断后小计与子树汇总）
+     */
+    @GetMapping("/category-scores")
+    @PreAuthorize("hasAuthority('sys:student:menu')")
+    @CrossOrigin
+    public Result<StudentCategoryScoreOverviewVO> categoryScores(@RequestParam Long periodId) {
+        return Result.success(studentApplyService.listMyCategoryScoreOverview(periodId));
     }
 
     /**

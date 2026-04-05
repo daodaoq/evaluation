@@ -4,7 +4,13 @@ package com.project.evaluation.mapper;
 import com.project.evaluation.entity.Time;
 import com.project.evaluation.vo.Time.AddTimeReq;
 import com.project.evaluation.vo.Time.UpdateTimeReq;
-import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
+import org.apache.ibatis.annotations.Delete;
 
 import java.util.List;
 
@@ -30,6 +36,7 @@ public interface TimeMapper {
              #{publicNoticeStart}, #{publicNoticeEnd}, #{objectionEndTime},
              NOW(), NOW())
             """)
+    @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
     void addTime(AddTimeReq addTimeReq);
 
     /**
@@ -90,5 +97,5 @@ public interface TimeMapper {
      * @param status
      * @return
      */
-    List<Time> paginationQuery(@Param("periodName") String periodName, @Param("status") Integer status);
+    List<Time> paginationQuery(@Param("periodName") String periodName, @Param("statuses") List<Integer> statuses);
 }

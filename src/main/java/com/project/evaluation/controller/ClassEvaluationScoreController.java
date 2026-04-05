@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
 
 @RestController
 @RequestMapping("/class-evaluation-scores")
@@ -33,22 +35,24 @@ public class ClassEvaluationScoreController {
     public Result<PageBean<ClassEvaluationScoreRowVO>> list(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
-            @RequestParam Long periodId,
+            @RequestParam(required = false) List<Long> periodIds,
             @RequestParam(required = false) Long classId,
             @RequestParam(required = false) String studentNo,
             @RequestParam(required = false) String totalSortOrder) {
-        return Result.success(classEvaluationScoreService.page(pageNum, pageSize, periodId, classId, studentNo, totalSortOrder));
+        List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
+        return Result.success(classEvaluationScoreService.page(pageNum, pageSize, pids, classId, studentNo, totalSortOrder));
     }
 
     @GetMapping("/export")
     @PreAuthorize("hasAuthority('sys:class-score:menu')")
     @CrossOrigin
     public ResponseEntity<byte[]> export(
-            @RequestParam Long periodId,
+            @RequestParam(required = false) List<Long> periodIds,
             @RequestParam(required = false) Long classId,
             @RequestParam(required = false) String studentNo,
             @RequestParam(required = false) String totalSortOrder) {
-        byte[] data = classEvaluationScoreService.exportExcel(periodId, classId, studentNo, totalSortOrder);
+        List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
+        byte[] data = classEvaluationScoreService.exportExcel(pids, classId, studentNo, totalSortOrder);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
@@ -63,20 +67,22 @@ public class ClassEvaluationScoreController {
     public Result<PageBean<ClassUnsubmittedRowVO>> unsubmittedList(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
-            @RequestParam Long periodId,
+            @RequestParam(required = false) List<Long> periodIds,
             @RequestParam(required = false) Long classId,
             @RequestParam(required = false) String studentNo) {
-        return Result.success(classEvaluationScoreService.pageUnsubmitted(pageNum, pageSize, periodId, classId, studentNo));
+        List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
+        return Result.success(classEvaluationScoreService.pageUnsubmitted(pageNum, pageSize, pids, classId, studentNo));
     }
 
     @GetMapping("/unsubmitted/export")
     @PreAuthorize("hasAuthority('sys:class-score:menu')")
     @CrossOrigin
     public ResponseEntity<byte[]> exportUnsubmitted(
-            @RequestParam Long periodId,
+            @RequestParam(required = false) List<Long> periodIds,
             @RequestParam(required = false) Long classId,
             @RequestParam(required = false) String studentNo) {
-        byte[] data = classEvaluationScoreService.exportUnsubmittedExcel(periodId, classId, studentNo);
+        List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
+        byte[] data = classEvaluationScoreService.exportUnsubmittedExcel(pids, classId, studentNo);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));

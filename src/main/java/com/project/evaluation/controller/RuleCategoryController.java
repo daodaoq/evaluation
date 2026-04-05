@@ -5,7 +5,9 @@ import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.RuleCategory;
 import com.project.evaluation.service.RuleCategoryService;
 import com.project.evaluation.vo.RuleCategory.AddRuleCategoryReq;
+import com.project.evaluation.vo.RuleCategory.CopyRuleCategoriesReq;
 import com.project.evaluation.vo.RuleCategory.DeleteRuleCategoryReq;
+import com.project.evaluation.vo.RuleCategory.RuleCategoryCopyPreviewVO;
 import com.project.evaluation.vo.RuleCategory.UpdateRuleCategoryReq;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -75,8 +77,9 @@ public class RuleCategoryController {
     @GetMapping
     @PreAuthorize("hasAuthority('sys:category:menu')")
     @CrossOrigin
-    public Result<List<RuleCategory>> ruleCategoryList() {
-        List<RuleCategory> ruleCategorys = ruleCategoryService.ruleCategoryList();
+    public Result<List<RuleCategory>> ruleCategoryList(
+            @RequestParam(required = false) List<Integer> ruleIds) {
+        List<RuleCategory> ruleCategorys = ruleCategoryService.ruleCategoryList(ruleIds);
         return Result.success(ruleCategorys);
     }
 
@@ -104,9 +107,28 @@ public class RuleCategoryController {
     @CrossOrigin
     public Result<PageBean<RuleCategory>> paginationQuery(
             @RequestParam Integer pageNum,
-            @RequestParam Integer pageSize
+            @RequestParam Integer pageSize,
+            @RequestParam(required = false) List<Integer> ruleIds
     ) {
-        PageBean<RuleCategory> pb = ruleCategoryService.paginationQuery(pageNum, pageSize);
+        PageBean<RuleCategory> pb = ruleCategoryService.paginationQuery(pageNum, pageSize, ruleIds);
         return Result.success(pb);
+    }
+
+    @PostMapping("/copy-by-period")
+    @PreAuthorize("hasAuthority('sys:category:menu')")
+    @CrossOrigin
+    public Result<String> copyByPeriod(@RequestBody CopyRuleCategoriesReq req) {
+        int copied = ruleCategoryService.copyByPeriod(
+                req.getSourcePeriodId(), req.getTargetPeriodId(), req.getOverwrite());
+        return Result.success("复制成功，共复制 " + copied + " 条规则分类");
+    }
+
+    @GetMapping("/copy-preview")
+    @PreAuthorize("hasAuthority('sys:category:menu')")
+    @CrossOrigin
+    public Result<RuleCategoryCopyPreviewVO> previewCopyByPeriod(
+            @RequestParam Integer sourcePeriodId,
+            @RequestParam Integer targetPeriodId) {
+        return Result.success(ruleCategoryService.previewCopyByPeriod(sourcePeriodId, targetPeriodId));
     }
 }

@@ -27,13 +27,13 @@ public class TimeController {
      * @return
      */
     @PostMapping
-    @PreAuthorize("hasAuthority('sys:period:flow:menu')")
+    @PreAuthorize("hasAnyAuthority('sys:period:flow:menu','sys:rule:menu')")
     @CrossOrigin
-    public Result addTime(@RequestBody AddTimeReq addTimeReq){
+    public Result<Integer> addTime(@RequestBody AddTimeReq addTimeReq){
         Time time = timeService.findTimeByName(addTimeReq.getPeriodName());
         if(time == null) {
             timeService.addTime(addTimeReq);
-            return Result.success();
+            return Result.success(addTimeReq.getId());
         } else{
             return Result.error("已有周期");
         }
@@ -104,9 +104,9 @@ public class TimeController {
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
             @RequestParam (required = false) String periodName,
-            @RequestParam (required = false) Integer status
+            @RequestParam (required = false) List<Integer> statuses
             ) {
-        PageBean<Time> pb = timeService.paginationQuery(pageNum, pageSize, periodName, status);
+        PageBean<Time> pb = timeService.paginationQuery(pageNum, pageSize, periodName, statuses);
         return Result.success(pb);
    }
 

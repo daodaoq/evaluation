@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClassEvaluationScoreRowVO {
+    /** 综测周期（多周期合并列表时用于区分） */
+    private Long periodId;
     private Long userId;
     private String studentNo;
     private String studentName;

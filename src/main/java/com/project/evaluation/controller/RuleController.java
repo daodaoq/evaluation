@@ -107,10 +107,10 @@ public class RuleController {
     public Result<PageBean<Rule>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
-            @RequestParam (required = false) Integer periodId,
-            @RequestParam (required = false) Integer status
+            @RequestParam(required = false) List<Integer> periodIds,
+            @RequestParam(required = false) List<Integer> statuses
     ) {
-        PageBean<Rule> pb = ruleService.paginationQuery(pageNum, pageSize, periodId, status);
+        PageBean<Rule> pb = ruleService.paginationQuery(pageNum, pageSize, periodIds, statuses);
         return Result.success(pb);
     }
 }

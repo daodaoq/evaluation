@@ -9,8 +9,9 @@
             <if test="periodName != null and periodName != ''">
                 period_name = #{periodName}
             </if>
-            <if test="status != null">
-                AND status = #{status}
+            <if test="statuses != null and statuses.size() &gt; 0">
+                AND status IN
+                <foreach collection="statuses" item="st" open="(" separator="," close=")">#{st}</foreach>
             </if>
         </where>
     </select>

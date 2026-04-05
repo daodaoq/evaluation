@@ -7,6 +7,7 @@ import com.project.evaluation.vo.College.UpdateCollegeReq;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+
 @Service
 public interface CollegeService {
     College findCollegeByName(String collegeName);
@@ -21,5 +22,5 @@ public interface CollegeService {
 
     List<College> collegeList();
 
-    PageBean<College> paginationQuery(Integer pageNum, Integer pageSize, Integer status);
+    PageBean<College> paginationQuery(Integer pageNum, Integer pageSize, List<Integer> statuses);
 }

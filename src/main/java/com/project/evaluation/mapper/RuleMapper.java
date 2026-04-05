@@ -16,18 +16,18 @@ public interface RuleMapper {
      */
     @Insert("""
             INSERT INTO `evaluation_rule` (
-                period_id, rule_name, version_code, moral_weight, academic_weight, quality_weight, status, create_time, update_time
+                period_id, rule_name, version_code, status, create_time, update_time
             ) VALUES (
-                #{periodId}, #{ruleName}, #{versionCode}, #{moralWeight}, #{academicWeight}, #{qualityWeight}, #{status}, NOW(), NOW()
+                #{periodId}, #{ruleName}, #{versionCode}, #{status}, NOW(), NOW()
             )
             """)
     void addRule(AddRuleReq addRuleReq);
 
     @Insert("""
             INSERT INTO `evaluation_rule` (
-                period_id, rule_name, version_code, moral_weight, academic_weight, quality_weight, status, create_time, update_time
+                period_id, rule_name, version_code, status, create_time, update_time
             ) VALUES (
-                #{periodId}, #{ruleName}, #{versionCode}, #{moralWeight}, #{academicWeight}, #{qualityWeight}, #{status}, NOW(), NOW()
+                #{periodId}, #{ruleName}, #{versionCode}, #{status}, NOW(), NOW()
             )
             """)
     @Options(useGeneratedKeys = true, keyProperty = "id", keyColumn = "id")
@@ -48,9 +48,6 @@ public interface RuleMapper {
             UPDATE `evaluation_rule` SET
                 rule_name = #{updateRuleReq.ruleName},
                 version_code = #{updateRuleReq.versionCode},
-                moral_weight = #{updateRuleReq.moralWeight},
-                academic_weight = #{updateRuleReq.academicWeight},
-                quality_weight = #{updateRuleReq.qualityWeight},
                 status = #{updateRuleReq.status},
                 update_time = NOW()
             WHERE id = #{id}
@@ -94,5 +91,5 @@ public interface RuleMapper {
      * @param status
      * @return
      */
-    List<Rule> paginationQuery(@Param("periodId") Integer periodId, @Param("status") Integer status);
+    List<Rule> paginationQuery(@Param("periodIds") List<Integer> periodIds, @Param("statuses") List<Integer> statuses);
 }

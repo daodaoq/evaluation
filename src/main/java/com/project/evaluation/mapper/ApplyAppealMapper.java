@@ -90,11 +90,13 @@ public interface ApplyAppealMapper {
             <if test="studentNo != null and studentNo != ''">
                 AND u.student_id LIKE CONCAT('%', #{studentNo}, '%')
             </if>
-            <if test="periodId != null">
-                AND a.period_id = #{periodId}
+            <if test="periodIds != null and periodIds.size() &gt; 0">
+                AND a.period_id IN
+                <foreach collection="periodIds" item="pid" open="(" separator="," close=")">#{pid}</foreach>
             </if>
-            <if test="appealStatus != null and appealStatus != ''">
-                AND ap.status = #{appealStatus}
+            <if test="appealStatuses != null and appealStatuses.size() &gt; 0">
+                AND ap.status IN
+                <foreach collection="appealStatuses" item="st" open="(" separator="," close=")">#{st}</foreach>
             </if>
             <if test="collegeId != null">
                 AND u.college_id = #{collegeId}
@@ -111,8 +113,8 @@ public interface ApplyAppealMapper {
         </script>
         """)
     List<ApplyAppealRowVO> pageAppeals(@Param("studentNo") String studentNo,
-                                       @Param("periodId") Long periodId,
-                                       @Param("appealStatus") String appealStatus,
+                                       @Param("periodIds") List<Long> periodIds,
+                                       @Param("appealStatuses") List<String> appealStatuses,
                                        @Param("collegeId") Long collegeId,
                                        @Param("classId") Long classId,
                                        @Param("classIds") List<Integer> classIds);
