@@ -765,6 +765,23 @@ public class StudentApplyServiceImpl implements StudentApplyService {
         return x;
     }
 
+    private static final BigDecimal MAX_STUDENT_DECLARED_SCORE = new BigDecimal("999.99");
+
+    /** 任职分 / 非细则项自填分：非空、0～999.99、保留两位小数 */
+    private static BigDecimal assertStudentDeclaredScore(BigDecimal raw, String nullMessage, String negativeMessage) {
+        if (raw == null) {
+            throw new IllegalArgumentException(nullMessage);
+        }
+        BigDecimal s = raw.setScale(2, RoundingMode.HALF_UP);
+        if (s.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException(negativeMessage);
+        }
+        if (s.compareTo(MAX_STUDENT_DECLARED_SCORE) > 0) {
+            throw new IllegalArgumentException("申报分值不能超过 999.99");
+        }
+        return s;
+    }
+
     private static void assertMaterialKeyForUser(Integer userId, String fileUrlOrKey) {
         if (userId == null || !StringUtils.hasText(fileUrlOrKey)) {
             throw new IllegalArgumentException("材料无效");
@@ -783,14 +800,13 @@ public class StudentApplyServiceImpl implements StudentApplyService {
         if (itemReq == null) {
             throw new IllegalArgumentException("申报项不能为空");
         }
-        if (itemReq.getDeclaredScore() != null
-                && !ApplyScoreConstants.isPositionScoreCustomName(
-                        itemReq.getCustomName() == null ? "" : itemReq.getCustomName())) {
-            throw new IllegalArgumentException("参数非法：仅任职分可自填分值");
-        }
         boolean isRuleItem = itemReq.getRuleItemId() != null && itemReq.getRuleItemId() > 0;
+        if (isRuleItem && itemReq.getDeclaredScore() != null) {
+            throw new IllegalArgumentException("细则项请勿填写自填分值");
+        }
         boolean isPositionScore =
                 !isRuleItem && ApplyScoreConstants.isPositionScoreCustomName(itemReq.getCustomName());
+        BigDecimal customPersistedScore = null;
         if (!isRuleItem && ApplyScoreConstants.isCategorySubmitNoneCustomName(itemReq.getCustomName())) {
             throw new IllegalArgumentException("请使用页面上的「本分类无奖项」入口提交");
         }
@@ -798,7 +814,7 @@ public class StudentApplyServiceImpl implements StudentApplyService {
             throw new IllegalArgumentException("请使用页面上的「无任职分可报」入口提交");
         }
         if (!isRuleItem && !isPositionScore) {
-            // 非细则项：必须备注 + 证明材料
+            // 非细则项：名称 + 备注 + 材料 + 自填分值
             if (!StringUtils.hasText(itemReq.getCustomName())) {
                 throw new IllegalArgumentException("非细则项必须填写申报名称");
             }
@@ -808,14 +824,15 @@ public class StudentApplyServiceImpl implements StudentApplyService {
             if (CollectionUtils.isEmpty(itemReq.getMaterials())) {
                 throw new IllegalArgumentException("非细则项必须上传证明材料");
             }
+            customPersistedScore = assertStudentDeclaredScore(
+                    itemReq.getDeclaredScore(),
+                    "非细则项请填写申报分值",
+                    "申报分值不能为负数");
         } else if (isPositionScore) {
-            if (itemReq.getDeclaredScore() == null) {
-                throw new IllegalArgumentException("任职分请填写分值");
-            }
-            BigDecimal dec = itemReq.getDeclaredScore().setScale(2, RoundingMode.HALF_UP);
-            if (dec.compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalArgumentException("任职分不能为负数");
-            }
+            customPersistedScore = assertStudentDeclaredScore(
+                    itemReq.getDeclaredScore(),
+                    "任职分请填写分值",
+                    "任职分不能为负数");
         } else {
             String moduleCode = studentApplyMapper.findModuleCodeByRuleItemId(itemReq.getRuleItemId());
             if ("ACADEMIC".equalsIgnoreCase(moduleCode)) {
@@ -867,10 +884,7 @@ public class StudentApplyServiceImpl implements StudentApplyService {
                     ratio);
             item.setScore(declared.setScale(2, RoundingMode.HALF_UP));
         } else {
-            item.setScore(
-                    isPositionScore
-                            ? itemReq.getDeclaredScore().setScale(2, RoundingMode.HALF_UP)
-                            : BigDecimal.ZERO);
+            item.setScore(customPersistedScore);
         }
         item.setStatus("PENDING");
         item.setSourceType(isRuleItem ? "RULE" : "CUSTOM");

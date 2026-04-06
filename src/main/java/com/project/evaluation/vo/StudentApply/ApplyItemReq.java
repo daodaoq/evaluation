@@ -10,7 +10,9 @@ public class ApplyItemReq {
     private Long ruleItemId;
     private String customName;
     private String remark;
-    /** 仅「任职分」自填时使用，其它申报项勿传 */
+    /**
+     * 自填分值：任职分、非细则项必填；细则项勿传。
+     */
     private BigDecimal declaredScore;
     private List<ApplyMaterialReq> materials;
 

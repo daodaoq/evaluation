@@ -58,7 +58,7 @@ public class StudentApplyController {
     }
 
     /**
-     * 学生端：提交申报（仅细则项，或非细则项+材料+备注）
+     * 学生端：提交申报（细则项；或非细则项+材料+备注+自填分值；任职分另见德育面板）
      */
     @PostMapping("/submit")
     @PreAuthorize("hasAuthority('sys:student:menu')")

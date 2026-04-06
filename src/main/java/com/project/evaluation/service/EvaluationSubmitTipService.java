@@ -1,11 +1,14 @@
 package com.project.evaluation.service;
 
 import com.project.evaluation.entity.EvaluationSubmitTip;
+import com.project.evaluation.entity.RuleCategory;
 import com.project.evaluation.vo.SubmitTip.SubmitTipSaveReq;
 
 import java.util.List;
 
 public interface EvaluationSubmitTipService {
+    List<RuleCategory> listCategoriesForTipManage(Long periodId);
+
     List<EvaluationSubmitTip> listForManage(List<Long> periodIds, List<String> sectionCodes);
 
     void add(SubmitTipSaveReq req);
