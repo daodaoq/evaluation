@@ -56,14 +56,13 @@ public class SecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .logout(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/user/login", "/ws/**").permitAll()
+                        .requestMatchers("/user/login", "/ws/**", "/error").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> {
-                    // 认证异常处理
                     exception.authenticationEntryPoint((request, response, authException) -> {
                         ResponseUtil.write(response, Result.error(authException.getMessage()));
                     });
-                    exception.authenticationEntryPoint((request, response, accessDeniedException) -> {
+                    exception.accessDeniedHandler((request, response, accessDeniedException) -> {
                         ResponseUtil.write(response, Result.error(accessDeniedException.getMessage()));
                     });
                 })

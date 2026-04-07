@@ -27,6 +27,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
 
+    /**
+     * SSE / SseEmitter 等异步请求在 Tomcat 二次分发（ASYNC）时仍会走过滤器链。
+     * 默认 {@link OncePerRequestFilter} 会跳过 ASYNC，导致本过滤器不执行、SecurityContext 为空，
+     * {@code AuthorizationFilter} 报 Access Denied 且响应已提交，前端流无法结束、按钮一直 loading。
+     */
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String uri = request.getRequestURI();

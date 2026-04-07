@@ -1,4 +1,17 @@
 spring:
+  # 默认不加载 Spring AI / Chroma，避免未启动 Chroma 或未配置 AI_API_KEY 时应用无法启动。
+  # 需要细则问答时：在 evaluation 目录下 .env 中设置 SPRING_PROFILES_ACTIVE=default,ai（或启动参数）
+  # AI 相关写在 .env（DotenvBootstrap 启动前加载），勿提交 Git；CHROMA_HOST 须含协议，如 http://127.0.0.1
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.vectorstore.chroma.autoconfigure.ChromaVectorStoreAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiImageAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioSpeechAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiAudioTranscriptionAutoConfiguration
+      - org.springframework.ai.model.openai.autoconfigure.OpenAiModerationAutoConfiguration
+      - org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/evaluation?useSSL=false&allowPublicKeyRetrieval=true  # 去掉末尾的引号
@@ -14,6 +27,34 @@ spring:
       port: 6379
       password: 123456
       database: 0
+  # 综测细则 AI 问答（Spring AI + 阿里云 DashScope OpenAI 兼容接口 + Chroma）
+  # AI_API_KEY、AI_ENDPOINT 对话与向量共用；仅需 AI_EMBEDDING_MODEL 指定嵌入模型名（无需单独 Key）
+  # AI_ENDPOINT 须以 / 结尾（如 .../v1/）；否则 RestClient 会把 embeddings 拼成 .../compatible-mode/embeddings 导致 404
+  # DotenvBootstrap 会在加载 .env 后自动为 AI_ENDPOINT 补全尾部 /
+  # 本地 Chroma：在 evaluation 目录执行 docker compose -f docker/docker-compose-chroma.yml up -d
+  ai:
+    openai:
+      # 兼容模式：https://help.aliyun.com/zh/model-studio/developer-reference/use-qwen-by-calling-api
+      api-key: ${AI_API_KEY:${OPENAI_API_KEY:}}
+      base-url: ${AI_ENDPOINT:https://dashscope.aliyuncs.com/compatible-mode/v1/}
+      chat:
+        completions-path: chat/completions
+        options:
+          model: ${AI_MODEL:qwen3-max}
+      embedding:
+        base-url: ${AI_ENDPOINT:https://dashscope.aliyuncs.com/compatible-mode/v1/}
+        embeddings-path: embeddings
+        options:
+          model: ${AI_EMBEDDING_MODEL:text-embedding-v4}
+    vectorstore:
+      chroma:
+        initialize-schema: true
+        collection-name: evaluation_rule_knowledge
+        client:
+          # 须为合法 URI 主机部分，需带 http:// 或 https://（与 Spring AI 默认 http://localhost 一致）
+          host: ${CHROMA_HOST:http://127.0.0.1}
+          port: ${CHROMA_PORT:8000}
+
 mybatis:
   configuration:
     map-underscore-to-camel-case: true
@@ -29,3 +70,8 @@ minio:
   access-key: minioadmin
   secret-key: minioadmin
   bucket-name: evaluation
+
+# 每次启动是否将 classpath:综测细则.json 转为正文后切块写入 Chroma（重复执行会产生重复向量；细则更新后可先删 collection 或将此项设为 false）
+app:
+  ai:
+    ingest-rules-on-start: true

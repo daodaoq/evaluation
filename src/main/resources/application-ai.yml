@@ -1,0 +1,8 @@
+# 启用综测细则 AI 问答时：在 evaluation/.env 中设置 SPRING_PROFILES_ACTIVE=default,ai
+# 并填写 AI_API_KEY（及可选 AI_ENDPOINT、AI_MODEL）；先启动 Chroma（见 evaluation/docker/docker-compose-chroma.yml）
+spring:
+  config:
+    activate:
+      on-profile: ai
+  autoconfigure:
+    exclude: []
