@@ -71,7 +71,38 @@ CHROMA_PORT=8000
 - 不需要 AI 时，可将 `SPRING_PROFILES_ACTIVE` 去掉 `ai`
 - `.env` 已在 `.gitignore` 中，避免提交密钥
 
-## 七、启动依赖服务（推荐）
+## 七、MySQL 初始化（localhost）
+
+后端默认连接本地 MySQL：
+
+- 地址：`localhost:3306`
+- 数据库：`evaluation`
+- 用户名：`root`
+- 密码：`123456`
+
+请先在 MySQL 中创建数据库并导入初始化脚本。
+
+### 1) 创建数据库
+
+```sql
+CREATE DATABASE IF NOT EXISTS evaluation
+  DEFAULT CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+```
+
+### 2) 执行 SQL 文件
+
+在 `evaluation/` 目录执行（你的文件名已指定）：
+
+```bash
+mysql -h localhost -P 3306 -u root -p evaluation < sql/_localhost-2026_04_06_11_25_04-dump.sql
+```
+
+输入密码后即可导入。
+
+如果你使用的是其他账号/密码，请同步修改 `src/main/resources/application.yml` 中的数据源配置。
+
+## 八、启动依赖服务（推荐）
 
 在 `evaluation/` 目录执行：
 
@@ -102,7 +133,7 @@ docker compose -f docker/docker-compose-chroma.yml down
 docker compose -f docker/docker-compose-chroma.yml down -v
 ```
 
-## 八、启动后端
+## 九、启动后端
 
 ```bash
 cd evaluation
@@ -111,7 +142,7 @@ cd evaluation
 
 默认端口：`8080`
 
-## 九、RAG 问答说明
+## 十、RAG 问答说明
 
 - 数据源：`src/main/resources/综测细则.json`
 - 入库行为：默认启动自动入库（可在 `application.yml` 调整）
@@ -122,7 +153,7 @@ cd evaluation
 1. 清理旧 Chroma collection（避免重复向量）
 2. 重启后端触发重新入库
 
-## 十、常见问题排查
+## 十一、常见问题排查
 
 - AI Embedding 报 404
   - 检查 `AI_ENDPOINT` 是否正确，是否带结尾 `/`
@@ -134,7 +165,7 @@ cd evaluation
   - 优先清理向量库后重建
   - 检查细则文本结构与关键词是否清晰
 
-## 十一、生产建议
+## 十二、生产建议
 
 - 使用独立 MySQL / Redis / MinIO / 向量库实例
 - 使用环境变量注入密钥，不要硬编码
