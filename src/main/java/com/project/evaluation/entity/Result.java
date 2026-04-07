@@ -6,27 +6,22 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 统一响应结果
- * @param <T>
+ * 统一 API 响应包装类。
+ *
+ * @param <T> data 字段承载的业务数据类型
  */
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
 public class Result <T>{
 
-    /**
-     * 业务状态码 0-成功 1-失败
-     */
+    /** 业务状态码：0 成功，非 0 失败（具体含义与前端约定） */
     private Integer code;
 
-    /**
-     * 提示信息
-     */
+    /** 提示信息（成功文案或错误原因） */
     private String message;
 
-    /**
-     * 响应数据
-     */
+    /** 业务数据载荷；失败时多为 null */
     private T data;
 
     /**

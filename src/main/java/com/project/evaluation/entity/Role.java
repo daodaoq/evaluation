@@ -5,36 +5,28 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- *角色实体类
+ * 系统角色，与表 sys_role 对应。
  */
 @Data
 public class Role {
 
-    /**
-     * id
-     */
+    /** 主键 */
     private Integer id;
 
-    /**
-     * 角色名称
-     */
+    /** 角色名称（展示用） */
     private String roleName;
 
-    /**
-     * 角色名称代码
-     */
+    /** 角色编码（唯一标识，如 ROLE_TEACHER） */
     private String roleCode;
 
-    /**
-     * 角色解释
-     */
+    /** 角色说明 */
     private String description;
 
-    /**
-     * 状态
-     */
+    /** 状态：1 启用，0 停用 */
     private Integer status;
 
+    /** 记录创建时间 */
     private LocalDateTime createTime;
+    /** 记录最后更新时间 */
     private LocalDateTime updateTime;
 }

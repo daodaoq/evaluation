@@ -11,6 +11,11 @@ import java.util.Arrays;
 @Configuration
 public class WebCorsConfig {
 
+    /**
+     * 解决跨域问题
+     * 允许所有来源的请求（*），允许所有方法（GET, POST, PUT, DELETE, OPTIONS），允许所有头部（*），允许凭证（true），允许缓存（3600秒）
+     * @return
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();

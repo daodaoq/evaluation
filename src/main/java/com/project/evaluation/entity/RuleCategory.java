@@ -5,6 +5,9 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ * 规则分类（树形），与表 evaluation_rule_item_category 对应。
+ */
 @Data
 public class RuleCategory {
 
@@ -40,6 +43,8 @@ public class RuleCategory {
     /** 该分类节点的基础分（计入本节点小计，并与子分类汇总） */
     private BigDecimal categoryBaseScore;
 
+    /** 记录创建时间 */
     private LocalDateTime createTime;
+    /** 记录最后更新时间 */
     private LocalDateTime updateTime;
 }

@@ -5,12 +5,10 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 综测规则总览类
+ * 综测规则总览（绑定周期），与表 evaluation_rule 对应。
  */
 @Data
 public class Rule {
-
-    // TODO: 将非数据库字段添加进来
 
     /**
      * 规则总览 id
@@ -37,6 +35,8 @@ public class Rule {
      */
     private Integer status;
 
+    /** 记录创建时间 */
     private LocalDateTime createTime;
+    /** 记录最后更新时间 */
     private LocalDateTime updateTime;
 }

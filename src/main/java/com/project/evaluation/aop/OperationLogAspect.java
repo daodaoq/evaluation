@@ -31,24 +31,30 @@ public class OperationLogAspect {
     @Autowired
     private SysOperationLogService sysOperationLogService;
 
+    // 在 RestController 层进行环绕，记录操作日志，这个是对整个类生效的
     @Pointcut("@within(org.springframework.web.bind.annotation.RestController)")
     public void inRestController() {}
 
+    // 实际生效的范围是两个条件都成立
     @Around("inRestController() && execution(public * com.project.evaluation.controller..*(..))")
     public Object around(ProceedingJoinPoint pjp) throws Throwable {
+        // 执行原方法，得到返回结果
         Object result = pjp.proceed();
 
         // 只记录业务成功（Result.code == 0），并且只记录有 HttpServletRequest 的场景
         if (!(result instanceof Result<?> r)) return result;
         if (r.getCode() == null || r.getCode() != 0) return result;
 
+        // 当前线程里绑定的、与这次 Web 请求相关的一组“请求属性”
         ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         if (attrs == null) return result;
         HttpServletRequest request = attrs.getRequest();
         if (request == null) return result;
 
+        // 不记录读操作，判断是否为读操作
         if (shouldSkip(request)) return result;
 
+        // 获取当前用户ID
         Long userId;
         try {
             Integer uid = SecurityContextUtil.getCurrentUserId();
@@ -58,10 +64,12 @@ public class OperationLogAspect {
             return result;
         }
 
+        // 获取操作类型和内容
         String operation = operationFromRequest(request, pjp);
         String content = buildContent(request, pjp.getArgs());
         String ipAddress = resolveIp(request);
-
+        
+        // 记录操作日志
         try {
             sysOperationLogService.record(userId, operation, content, ipAddress);
         } catch (Exception e) {

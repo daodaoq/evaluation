@@ -12,14 +12,19 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Spring Security 用户详情封装，将 {@link MyUser} 与权限编码列表适配为 {@link UserDetails}。
+ */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MyUserDetails implements UserDetails {
 
+    /** 业务用户实体（账号、密码、状态等） */
     private MyUser myUser;
 
+    /** 权限编码列表（如 sys:user:menu），用于构建 GrantedAuthority */
     private List<String> authorityList;
 
     @Override

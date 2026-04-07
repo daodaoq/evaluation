@@ -6,12 +6,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * 综测规则项
+ * 综测规则细则项，与表 evaluation_rule_item 对应。
  */
 @Data
 public class RuleItem {
-
-    // TODO: 将非数据库字段添加进来
 
     /**
      * 规则项 id
@@ -94,6 +92,8 @@ public class RuleItem {
      */
     private String submoduleCode;
 
+    /** 记录创建时间 */
     private LocalDateTime createTime;
+    /** 记录最后更新时间 */
     private LocalDateTime updateTime;
 }
