@@ -10,18 +10,18 @@
 # 参考：https://docs.spring.io/spring-ai/reference/1.0/api/vectordbs/chroma.html
 services:
   chroma:
-    image: ghcr.io/chroma-core/chroma:1.0.0
+    image: ghcr.io/chroma-core/chroma
     ports:
       - "8000:8000"
 
   redis:
-    image: redis:7-alpine
+    image: redis
     command: ["redis-server", "--requirepass", "123456"]
     ports:
       - "6379:6379"
 
   minio:
-    image: minio/minio:RELEASE.2025-01-20T14-49-07Z
+    image: minio/minio
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
       MINIO_ROOT_USER: "minioadmin"
@@ -34,7 +34,7 @@ services:
 
   # 初始化：创建桶并设置为 public（匿名可读）
   minio-init:
-    image: minio/mc:RELEASE.2025-01-16T05-11-04Z
+    image: minio/mc
     depends_on:
       - minio
     entrypoint: ["/bin/sh", "-c"]

@@ -3,8 +3,9 @@ package com.project.evaluation.controller;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.exception.BizException;
 import com.project.evaluation.exception.ErrorCode;
+import com.project.evaluation.service.RuleKnowledgeChatService;
 import com.project.evaluation.vo.RuleKnowledge.RuleKnowledgeChatReq;
-import org.springframework.context.annotation.Profile;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +20,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/student-apply/rule-knowledge")
-@Profile("!ai")
+@ConditionalOnMissingBean(RuleKnowledgeChatService.class)
 public class StudentRuleKnowledgeDisabledController {
 
     private static final String AI_DISABLED_MSG =

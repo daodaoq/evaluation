@@ -1,6 +1,8 @@
 package com.project.evaluation.controller;
 
 import com.project.evaluation.entity.Result;
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.service.RuleKnowledgeChatService;
 import com.project.evaluation.vo.RuleKnowledge.RuleKnowledgeChatReq;
 import jakarta.validation.Valid;
@@ -24,12 +26,18 @@ import java.util.Map;
 @Profile("ai")
 public class StudentRuleKnowledgeController {
 
-    @Autowired
+    private static final String AI_DISABLED_MSG =
+            "细则问答未启用：请检查 AI_API_KEY、CHROMA_HOST/PORT 并确认 Chroma 服务已启动。";
+
+    @Autowired(required = false)
     private RuleKnowledgeChatService ruleKnowledgeChatService;
 
     @PostMapping("/chat")
     @PreAuthorize("hasAuthority('sys:student:menu')")
     public Result<Map<String, String>> chat(@Valid @RequestBody RuleKnowledgeChatReq req) {
+        if (ruleKnowledgeChatService == null) {
+            throw new BizException(ErrorCode.BIZ_CONFLICT, AI_DISABLED_MSG);
+        }
         String answer = ruleKnowledgeChatService.chat(req.getQuestion());
         return Result.success(Map.of("answer", answer));
     }
@@ -41,6 +49,15 @@ public class StudentRuleKnowledgeController {
     @PreAuthorize("hasAuthority('sys:student:menu')")
     public SseEmitter chatStream(@RequestBody(required = false) RuleKnowledgeChatReq req) {
         SseEmitter emitter = new SseEmitter(120_000L);
+        if (ruleKnowledgeChatService == null) {
+            try {
+                emitter.send(SseEmitter.event().name("error").data(AI_DISABLED_MSG, MediaType.TEXT_PLAIN));
+                emitter.complete();
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+            }
+            return emitter;
+        }
         String question = req != null ? req.getQuestion() : null;
         Flux<String> flux = ruleKnowledgeChatService.chatStream(question);
         Disposable[] holder = new Disposable[1];

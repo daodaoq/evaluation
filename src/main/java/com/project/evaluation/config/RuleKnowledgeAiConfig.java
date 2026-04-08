@@ -1,6 +1,7 @@
 package com.project.evaluation.config;
 
 import com.project.evaluation.service.RuleKnowledgeChatService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Profile;
  */
 @Configuration
 @Profile("ai")
+@ConditionalOnBean({ChatModel.class, VectorStore.class})
 public class RuleKnowledgeAiConfig {
 
     /** 略增大检索条数，减少「竞赛等级表」挤占「基础加分明细」召回的情况 */

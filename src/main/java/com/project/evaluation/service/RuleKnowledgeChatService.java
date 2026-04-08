@@ -2,6 +2,7 @@ package com.project.evaluation.service;
 
 import com.project.evaluation.exception.BizException;
 import com.project.evaluation.exception.ErrorCode;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
@@ -14,6 +15,7 @@ import reactor.core.publisher.Flux;
  */
 @Service
 @Profile("ai")
+@ConditionalOnBean(name = "ruleKnowledgeChatClient")
 public class RuleKnowledgeChatService {
 
     /**

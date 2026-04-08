@@ -3,6 +3,7 @@ package com.project.evaluation.config;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -25,6 +26,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @Profile("ai")
+@ConditionalOnBean(VectorStore.class)
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class RuleKnowledgeIngestionRunner implements ApplicationRunner {
 
