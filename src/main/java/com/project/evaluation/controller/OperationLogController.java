@@ -24,7 +24,6 @@ public class OperationLogController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:log:menu')")
-    @CrossOrigin
     public Result<PageBean<SysOperationLog>> list(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,

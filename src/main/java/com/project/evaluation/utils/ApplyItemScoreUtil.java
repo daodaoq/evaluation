@@ -1,6 +1,7 @@
 package com.project.evaluation.utils;
 
-import org.springframework.util.StringUtils;
+import com.project.evaluation.score.RuleModeScoreStrategyFactory;
+import com.project.evaluation.score.SourceTypeScoreStrategyFactory;
 
 import java.math.BigDecimal;
 
@@ -10,7 +11,6 @@ import java.math.BigDecimal;
  */
 public final class ApplyItemScoreUtil {
 
-    private static final BigDecimal ZERO = BigDecimal.ZERO;
     private static final BigDecimal ONE = BigDecimal.ONE;
 
     private ApplyItemScoreUtil() {}
@@ -29,20 +29,8 @@ public final class ApplyItemScoreUtil {
             BigDecimal coeff,
             String scoreMode
     ) {
-        if (StringUtils.hasText(sourceType) && "CUSTOM".equalsIgnoreCase(sourceType.trim())) {
-            return persistedScore != null ? persistedScore : ZERO;
-        }
-        if (persistedScore != null && persistedScore.compareTo(ZERO) != 0) {
-            return persistedScore;
-        }
-        BigDecimal base = baseScore != null ? baseScore : ZERO;
-        BigDecimal c = coeff != null ? coeff : ONE;
-        BigDecimal actual = base.multiply(c);
-        String mode = scoreMode == null ? "ADD" : scoreMode.trim().toUpperCase();
-        if ("SUB".equals(mode) || "MAX_ONLY".equals(mode)) {
-            return actual.negate();
-        }
-        return actual;
+        return SourceTypeScoreStrategyFactory.get(sourceType)
+                .effectiveScore(persistedScore, baseScore, coeff, scoreMode);
     }
 
     /**
@@ -56,17 +44,10 @@ public final class ApplyItemScoreUtil {
             String scoreMode,
             BigDecimal ratio
     ) {
-        BigDecimal r = ratio == null || ratio.compareTo(ZERO) <= 0 ? ONE : ratio;
+        BigDecimal r = ratio == null || ratio.compareTo(BigDecimal.ZERO) <= 0 ? ONE : ratio;
         if (r.compareTo(ONE) > 0) {
             r = ONE;
         }
-        BigDecimal base = baseScore != null ? baseScore : ZERO;
-        BigDecimal c = coeff != null ? coeff : ONE;
-        BigDecimal actual = base.multiply(c).multiply(r);
-        String mode = scoreMode == null ? "ADD" : scoreMode.trim().toUpperCase();
-        if ("SUB".equals(mode) || "MAX_ONLY".equals(mode)) {
-            return actual.negate();
-        }
-        return actual;
+        return RuleModeScoreStrategyFactory.get(scoreMode).calculate(baseScore, coeff, r);
     }
 }

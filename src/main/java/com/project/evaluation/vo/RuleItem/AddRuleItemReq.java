@@ -1,5 +1,9 @@
 package com.project.evaluation.vo.RuleItem;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -13,11 +17,15 @@ public class AddRuleItemReq {
     /**
      * 规则总览 id
      */
+    @NotNull(message = "规则ID不能为空")
+    @Positive(message = "规则ID必须为正数")
     private Long ruleId;
 
     /**
      * 指标项名称
      */
+    @NotBlank(message = "指标项名称不能为空")
+    @Size(max = 100, message = "指标项名称长度不能超过100")
     private String itemName;
 
     /**
@@ -25,6 +33,7 @@ public class AddRuleItemReq {
      * 0-加分项
      * 1-减分项
      */
+    @NotNull(message = "指标项类型不能为空")
     private Integer itemType;
 
     /**
@@ -59,6 +68,7 @@ public class AddRuleItemReq {
     /**
      * 是否启用
      */
+    @NotNull(message = "状态不能为空")
     private Integer status;
 
     /**

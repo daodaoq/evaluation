@@ -5,6 +5,7 @@ import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.EvaluationObjectionService;
 import com.project.evaluation.vo.Objection.HandleObjectionReq;
 import com.project.evaluation.vo.Objection.ObjectionRowVO;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,6 @@ public class EvaluationObjectionController {
 
     @GetMapping("/page")
     @PreAuthorize("hasAuthority('sys:objection:menu')")
-    @CrossOrigin
     public Result<PageBean<ObjectionRowVO>> page(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
@@ -36,8 +36,7 @@ public class EvaluationObjectionController {
 
     @PostMapping("/handle")
     @PreAuthorize("hasAuthority('sys:objection:menu')")
-    @CrossOrigin
-    public Result<?> handle(@RequestBody HandleObjectionReq req) {
+    public Result<?> handle(@Valid @RequestBody HandleObjectionReq req) {
         evaluationObjectionService.handle(req);
         return Result.success();
     }

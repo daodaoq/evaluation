@@ -3,14 +3,25 @@ package com.project.evaluation.controller;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.Role;
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.service.RoleService;
 import com.project.evaluation.vo.Role.AddRoleReq;
 import com.project.evaluation.vo.Role.DeleteRoleReq;
 import com.project.evaluation.vo.Role.UpdateRoleReq;
 import com.project.evaluation.vo.Role.AssignPermissionReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -28,15 +39,13 @@ public class RoleController {
      */
     @PostMapping
     @PreAuthorize("hasAuthority('sys:role:menu')")
-    @CrossOrigin
-    public Result addRole(@RequestBody AddRoleReq addRoleReq) {
+    public Result<?> addRole(@Valid @RequestBody AddRoleReq addRoleReq) {
         Role role = roleService.findRoleByName(addRoleReq.getRoleName());
         if (role == null) {
             roleService.addRole(addRoleReq);
             return Result.success();
-        } else {
-            return Result.error("角色已存在");
         }
+        throw new BizException(ErrorCode.BIZ_CONFLICT, "角色已存在");
     }
 
     /**
@@ -47,8 +56,7 @@ public class RoleController {
      */
     @DeleteMapping
     @PreAuthorize("hasAuthority('sys:role:menu')")
-    @CrossOrigin
-    public Result deleteRole(@RequestBody DeleteRoleReq deleteRoleReq) {
+    public Result<?> deleteRole(@Valid @RequestBody DeleteRoleReq deleteRoleReq) {
         roleService.deleteRole(deleteRoleReq.getId());
         return Result.success();
     }
@@ -62,15 +70,13 @@ public class RoleController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:role:menu')")
-    @CrossOrigin
-    public Result updateRole(@RequestBody UpdateRoleReq updateRoleReq, @PathVariable("id") Integer id) {
+    public Result<?> updateRole(@Valid @RequestBody UpdateRoleReq updateRoleReq, @PathVariable("id") Integer id) {
         Role role = roleService.findRoleById(id);
         if (role != null) {
             roleService.updateRole(id, updateRoleReq);
             return Result.success();
-        } else {
-            return Result.error("角色不存在");
         }
+        throw new BizException(ErrorCode.RESOURCE_NOT_FOUND, "角色不存在");
     }
 
     /**
@@ -80,7 +86,6 @@ public class RoleController {
      */
     @GetMapping
     @PreAuthorize("hasAuthority('sys:role:menu')")
-    @CrossOrigin
     public Result<List<Role>> roleList() {
         List<Role> roles = roleService.roleList();
         return Result.success(roles);
@@ -94,7 +99,6 @@ public class RoleController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:role:menu')")
-    @CrossOrigin
     public Result<Role> findRoleById(@PathVariable("id") Integer id) {
         Role role = roleService.findRoleById(id);
         return Result.success(role);
@@ -110,7 +114,6 @@ public class RoleController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:role:menu')")
-    @CrossOrigin
     public Result<PageBean<Role>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
@@ -127,9 +130,8 @@ public class RoleController {
      */
     @PostMapping("/assign-permission")
     @PreAuthorize("hasAuthority('sys:role:menu')")
-    @CrossOrigin
-    public Result assignPermission(
-            @RequestBody AssignPermissionReq assignPermissionReq) {
+    public Result<?> assignPermission(
+            @Valid @RequestBody AssignPermissionReq assignPermissionReq) {
         roleService.assignPermissions(assignPermissionReq.getRoleId(), assignPermissionReq.getPermIds());
         return Result.success();
     }
@@ -142,7 +144,6 @@ public class RoleController {
      */
     @GetMapping("/permissions/{roleId}")
     @PreAuthorize("hasAuthority('sys:role:menu')")
-    @CrossOrigin
     public Result<List<Integer>> getRolePermissions(@PathVariable("roleId") Integer roleId) {
         List<Integer> permIds = roleService.getRolePermissions(roleId);
         return Result.success(permIds);

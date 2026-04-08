@@ -3,12 +3,15 @@ package com.project.evaluation.controller;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.RuleCategory;
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.service.RuleCategoryService;
 import com.project.evaluation.vo.RuleCategory.AddRuleCategoryReq;
 import com.project.evaluation.vo.RuleCategory.CopyRuleCategoriesReq;
 import com.project.evaluation.vo.RuleCategory.DeleteRuleCategoryReq;
 import com.project.evaluation.vo.RuleCategory.RuleCategoryCopyPreviewVO;
 import com.project.evaluation.vo.RuleCategory.UpdateRuleCategoryReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,15 +32,13 @@ public class RuleCategoryController {
      */
     @PostMapping
     @PreAuthorize("hasAuthority('sys:category:menu')")
-    @CrossOrigin
-    public Result addRuleCategory(@RequestBody AddRuleCategoryReq addRuleCategoryReq){
+    public Result<?> addRuleCategory(@Valid @RequestBody AddRuleCategoryReq addRuleCategoryReq){
         RuleCategory ruleCategory = ruleCategoryService.findRuleCategoryByName(addRuleCategoryReq.getCategoryName());
         if(ruleCategory == null) {
             ruleCategoryService.addRuleCategory(addRuleCategoryReq);
             return Result.success();
-        } else{
-            return Result.error("已有周期");
         }
+        throw new BizException(ErrorCode.BIZ_CONFLICT, "已有周期");
     }
 
     /**
@@ -46,8 +47,7 @@ public class RuleCategoryController {
      */
     @DeleteMapping
     @PreAuthorize("hasAuthority('sys:category:menu')")
-    @CrossOrigin
-    public Result deleteRuleCategory(@RequestBody DeleteRuleCategoryReq deleteRuleCategoryReq) throws IllegalAccessException {
+    public Result<?> deleteRuleCategory(@Valid @RequestBody DeleteRuleCategoryReq deleteRuleCategoryReq) throws IllegalAccessException {
         ruleCategoryService.deleteRuleCategory(deleteRuleCategoryReq.getId());
         return Result.success();
     }
@@ -59,15 +59,13 @@ public class RuleCategoryController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:category:menu')")
-    @CrossOrigin
-    public Result updateRuleCategory(@RequestBody UpdateRuleCategoryReq updateRuleCategoryReq, @PathVariable("id") Integer id) {
+    public Result<?> updateRuleCategory(@Valid @RequestBody UpdateRuleCategoryReq updateRuleCategoryReq, @PathVariable("id") Integer id) {
         RuleCategory ruleCategory = ruleCategoryService.findRuleCategoryById(id);
         if (ruleCategory != null) {
             ruleCategoryService.updateRuleCategory(id, updateRuleCategoryReq);
             return Result.success();
-        } else {
-            return Result.error("更新的周期不存在");
         }
+        throw new BizException(ErrorCode.RESOURCE_NOT_FOUND, "更新的周期不存在");
     }
 
     /**
@@ -76,7 +74,6 @@ public class RuleCategoryController {
      */
     @GetMapping
     @PreAuthorize("hasAuthority('sys:category:menu')")
-    @CrossOrigin
     public Result<List<RuleCategory>> ruleCategoryList(
             @RequestParam(required = false) List<Integer> ruleIds) {
         List<RuleCategory> ruleCategorys = ruleCategoryService.ruleCategoryList(ruleIds);
@@ -90,7 +87,6 @@ public class RuleCategoryController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:category:menu')")
-    @CrossOrigin
     public Result<RuleCategory> findRuleCategoryById(@PathVariable ("id") Integer id){
         RuleCategory ruleCategory = ruleCategoryService.findRuleCategoryById(id);
         return Result.success(ruleCategory);
@@ -104,7 +100,6 @@ public class RuleCategoryController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:category:menu')")
-    @CrossOrigin
     public Result<PageBean<RuleCategory>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
@@ -116,8 +111,7 @@ public class RuleCategoryController {
 
     @PostMapping("/copy-by-period")
     @PreAuthorize("hasAuthority('sys:category:menu')")
-    @CrossOrigin
-    public Result<String> copyByPeriod(@RequestBody CopyRuleCategoriesReq req) {
+    public Result<String> copyByPeriod(@Valid @RequestBody CopyRuleCategoriesReq req) {
         int copied = ruleCategoryService.copyByPeriod(
                 req.getSourcePeriodId(), req.getTargetPeriodId(), req.getOverwrite());
         return Result.success("复制成功，共复制 " + copied + " 条规则分类");
@@ -125,7 +119,6 @@ public class RuleCategoryController {
 
     @GetMapping("/copy-preview")
     @PreAuthorize("hasAuthority('sys:category:menu')")
-    @CrossOrigin
     public Result<RuleCategoryCopyPreviewVO> previewCopyByPeriod(
             @RequestParam Integer sourcePeriodId,
             @RequestParam Integer targetPeriodId) {

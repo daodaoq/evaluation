@@ -16,6 +16,7 @@ import com.project.evaluation.vo.StudentApply.StudentCategoryScoreOverviewVO;
 import com.project.evaluation.vo.StudentApply.StudentSectionScoreVO;
 import com.project.evaluation.vo.StudentApply.SubmitApplyReq;
 import com.project.evaluation.vo.StudentApply.SubmitObjectionReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,7 +43,6 @@ public class StudentApplyController {
      */
     @GetMapping("/rule-items")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<List<RuleItemSimpleVO>> listRuleItems(@RequestParam Long periodId) {
         return Result.success(studentApplyService.listRuleItems(periodId));
     }
@@ -52,7 +52,6 @@ public class StudentApplyController {
      */
     @GetMapping("/category-rule-tree")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<List<StudentRuleCategoryTreeNodeVO>> categoryRuleTree(@RequestParam Long periodId) {
         return Result.success(studentApplyService.listRuleItemCategoryTree(periodId));
     }
@@ -62,8 +61,7 @@ public class StudentApplyController {
      */
     @PostMapping("/submit")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
-    public Result<?> submit(@RequestBody SubmitApplyReq req) {
+    public Result<?> submit(@Valid @RequestBody SubmitApplyReq req) {
         studentApplyService.submitApply(req);
         return Result.success();
     }
@@ -73,7 +71,6 @@ public class StudentApplyController {
      */
     @PostMapping(value = "/upload-material", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<MaterialUploadVO> uploadMaterial(@RequestPart("file") MultipartFile file) {
         return Result.success(studentApplyService.uploadApplyMaterial(file));
     }
@@ -83,7 +80,6 @@ public class StudentApplyController {
      */
     @GetMapping("/material/preview-url")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<String> materialPreviewUrl(@RequestParam("key") String key) {
         return Result.success(studentApplyService.buildMaterialPreviewUrl(key));
     }
@@ -93,7 +89,6 @@ public class StudentApplyController {
      */
     @GetMapping("/mine")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<List<MyApplyVO>> mine() {
         return Result.success(studentApplyService.listMyApplyItems());
     }
@@ -103,7 +98,6 @@ public class StudentApplyController {
      */
     @GetMapping("/section-scores")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<List<StudentSectionScoreVO>> sectionScores(@RequestParam Long periodId) {
         return Result.success(studentApplyService.listMySectionScores(periodId));
     }
@@ -113,7 +107,6 @@ public class StudentApplyController {
      */
     @GetMapping("/category-scores")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<StudentCategoryScoreOverviewVO> categoryScores(@RequestParam Long periodId) {
         return Result.success(studentApplyService.listMyCategoryScoreOverview(periodId));
     }
@@ -123,8 +116,7 @@ public class StudentApplyController {
      */
     @PostMapping("/appeal")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
-    public Result<?> submitAppeal(@RequestBody SubmitAppealReq req) {
+    public Result<?> submitAppeal(@Valid @RequestBody SubmitAppealReq req) {
         applyAppealService.submitByStudent(req);
         return Result.success();
     }
@@ -134,7 +126,6 @@ public class StudentApplyController {
      */
     @GetMapping("/period-workflow")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<StudentPeriodWorkflowVO> periodWorkflow(@RequestParam Long periodId) {
         return Result.success(studentApplyService.getStudentPeriodWorkflow(periodId));
     }
@@ -144,7 +135,6 @@ public class StudentApplyController {
      */
     @PostMapping("/period-confirm-no-objection")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<?> confirmNoObjection(@RequestParam Long periodId) {
         studentApplyService.confirmPeriodNoObjection(periodId);
         return Result.success();
@@ -155,7 +145,6 @@ public class StudentApplyController {
      */
     @GetMapping("/active-publicity")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<List<EvaluationPublicity>> activePublicity(@RequestParam Long periodId) {
         return Result.success(studentApplyService.listActivePublicityForStudent(periodId));
     }
@@ -165,7 +154,6 @@ public class StudentApplyController {
      */
     @GetMapping("/tips")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<List<EvaluationSubmitTip>> tips(@RequestParam Long periodId,
                                                   @RequestParam(required = false) String sectionCode) {
         return Result.success(studentApplyService.listSubmitTipsForStudent(periodId, sectionCode));
@@ -176,8 +164,7 @@ public class StudentApplyController {
      */
     @PostMapping("/objection")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
-    public Result<?> submitObjection(@RequestBody SubmitObjectionReq req) {
+    public Result<?> submitObjection(@Valid @RequestBody SubmitObjectionReq req) {
         evaluationObjectionService.submitByStudent(req);
         return Result.success();
     }

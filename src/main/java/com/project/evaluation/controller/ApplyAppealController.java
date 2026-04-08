@@ -5,6 +5,7 @@ import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.ApplyAppealService;
 import com.project.evaluation.vo.ApplyAppeal.ApplyAppealRowVO;
 import com.project.evaluation.vo.ApplyAppeal.HandleAppealReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,6 @@ public class ApplyAppealController {
      */
     @GetMapping("/review/page")
     @PreAuthorize("hasAuthority('sys:appeal:menu')")
-    @CrossOrigin
     public Result<PageBean<ApplyAppealRowVO>> page(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
@@ -44,8 +44,7 @@ public class ApplyAppealController {
      */
     @PutMapping("/review/handle")
     @PreAuthorize("hasAuthority('sys:appeal:menu')")
-    @CrossOrigin
-    public Result<?> handle(@RequestBody HandleAppealReq req) {
+    public Result<?> handle(@Valid @RequestBody HandleAppealReq req) {
         applyAppealService.handleAppeal(req);
         return Result.success();
     }

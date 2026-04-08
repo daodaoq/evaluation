@@ -5,6 +5,7 @@ import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.EvaluationApprovalService;
 import com.project.evaluation.vo.EvaluationApproval.AuditApplyItemReq;
 import com.project.evaluation.vo.EvaluationApproval.EvaluationApplyItemVO;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,6 @@ public class EvaluationApprovalController {
      */
     @GetMapping("/items")
     @PreAuthorize("hasAuthority('sys:approval:menu') or hasAuthority('sys:rule:menu') or hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<PageBean<EvaluationApplyItemVO>> pageApplyItems(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
@@ -47,8 +47,7 @@ public class EvaluationApprovalController {
      */
     @PutMapping("/items/approve")
     @PreAuthorize("hasAuthority('sys:approval:menu') or hasAuthority('sys:rule:menu') or hasAuthority('sys:student:menu')")
-    @CrossOrigin
-    public Result<?> approveApplyItem(@RequestBody AuditApplyItemReq req) {
+    public Result<?> approveApplyItem(@Valid @RequestBody AuditApplyItemReq req) {
         evaluationApprovalService.approveApplyItem(req.getApplyItemId(), req.getRemark());
         return Result.success();
     }
@@ -58,8 +57,7 @@ public class EvaluationApprovalController {
      */
     @PutMapping("/items/reject")
     @PreAuthorize("hasAuthority('sys:approval:menu') or hasAuthority('sys:rule:menu') or hasAuthority('sys:student:menu')")
-    @CrossOrigin
-    public Result<?> rejectApplyItem(@RequestBody AuditApplyItemReq req) {
+    public Result<?> rejectApplyItem(@Valid @RequestBody AuditApplyItemReq req) {
         evaluationApprovalService.rejectApplyItem(req.getApplyItemId(), req.getRemark());
         return Result.success();
     }
@@ -69,7 +67,6 @@ public class EvaluationApprovalController {
      */
     @GetMapping("/material/preview-url")
     @PreAuthorize("hasAuthority('sys:approval:menu') or hasAuthority('sys:rule:menu') or hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<String> materialPreviewUrl(@RequestParam("key") String key) {
         return Result.success(evaluationApprovalService.buildMaterialPreviewUrlForAuditor(key));
     }

@@ -23,6 +23,13 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler
 {
+    @ExceptionHandler(BizException.class)
+    public Result<?> handleBizException(BizException e, HttpServletRequest request) {
+        log.warn("业务异常: method={}, uri={}, code={}, msg={}",
+                request.getMethod(), request.getRequestURI(), e.getCode(), e.getMessage());
+        return Result.error(e.getCode(), e.getMessage());
+    }
+
     /**
      * SQL 语法/字段异常（常见于库结构未执行迁移）
      */
@@ -49,7 +56,7 @@ public class GlobalExceptionHandler
                 .map(ConstraintViolation::getMessage)
                 .filter(m -> m != null && !m.isBlank())
                 .collect(Collectors.joining("；"));
-        return Result.error(msg.isBlank() ? "请求参数不合法" : msg);
+        return Result.error(ErrorCode.PARAM_INVALID.getCode(), msg.isBlank() ? "请求参数不合法" : msg);
     }
 
     /**
@@ -63,7 +70,7 @@ public class GlobalExceptionHandler
                 .map(FieldError::getDefaultMessage)
                 .filter(m -> m != null && !m.isBlank())
                 .collect(Collectors.joining("；"));
-        return Result.error(msg.isBlank() ? "请求参数不合法" : msg);
+        return Result.error(ErrorCode.PARAM_INVALID.getCode(), msg.isBlank() ? "请求参数不合法" : msg);
     }
 
     /**
@@ -77,7 +84,7 @@ public class GlobalExceptionHandler
                 .map(FieldError::getDefaultMessage)
                 .filter(m -> m != null && !m.isBlank())
                 .collect(Collectors.joining("；"));
-        return Result.error(msg.isBlank() ? "请求参数不合法" : msg);
+        return Result.error(ErrorCode.PARAM_INVALID.getCode(), msg.isBlank() ? "请求参数不合法" : msg);
     }
 
     /**
@@ -85,7 +92,7 @@ public class GlobalExceptionHandler
      */
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public Result<?> handleMissingParam(MissingServletRequestParameterException e) {
-        return Result.error("缺少请求参数: " + e.getParameterName());
+        return Result.error(ErrorCode.PARAM_INVALID.getCode(), "缺少请求参数: " + e.getParameterName());
     }
 
     /**
@@ -93,7 +100,7 @@ public class GlobalExceptionHandler
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public Result<?> handleMessageNotReadable(HttpMessageNotReadableException e) {
-        return Result.error("请求体格式错误");
+        return Result.error(ErrorCode.PARAM_INVALID.getCode(), "请求体格式错误");
     }
 
     /**
@@ -101,7 +108,7 @@ public class GlobalExceptionHandler
      */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public Result<?> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
-        return Result.error("不支持的请求方法: " + e.getMethod());
+        return Result.error(ErrorCode.PARAM_INVALID.getCode(), "不支持的请求方法: " + e.getMethod());
     }
 
     /**
@@ -109,7 +116,7 @@ public class GlobalExceptionHandler
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public Result<?> handleIllegalArgument(IllegalArgumentException e) {
-        return Result.error(e.getMessage() == null ? "请求参数不合法" : e.getMessage());
+        return Result.error(ErrorCode.PARAM_INVALID.getCode(), e.getMessage() == null ? "请求参数不合法" : e.getMessage());
     }
 
     /**
@@ -117,7 +124,7 @@ public class GlobalExceptionHandler
      */
     @ExceptionHandler(IllegalStateException.class)
     public Result<?> handleIllegalState(IllegalStateException e) {
-        return Result.error(e.getMessage() == null ? "操作失败" : e.getMessage());
+        return Result.error(ErrorCode.BIZ_CONFLICT.getCode(), e.getMessage() == null ? "操作失败" : e.getMessage());
     }
 
     /**
@@ -125,7 +132,7 @@ public class GlobalExceptionHandler
      */
     @ExceptionHandler(AccessDeniedException.class)
     public Result<?> handleAccessDenied(AccessDeniedException e) {
-        return Result.error("您的权限不足");
+        return Result.error(ErrorCode.FORBIDDEN.getCode(), "您的权限不足");
     }
 
     /**
@@ -133,7 +140,7 @@ public class GlobalExceptionHandler
      */
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public Result<?> handleMaxUploadSize(MaxUploadSizeExceededException e) {
-        return Result.error("上传文件过大");
+        return Result.error(ErrorCode.PARAM_INVALID.getCode(), "上传文件过大");
     }
 
     /**
@@ -142,6 +149,6 @@ public class GlobalExceptionHandler
     @ExceptionHandler(Exception.class)
     public Result<?> handleException(Exception e, HttpServletRequest request) {
         log.error("全局异常: method={}, uri={}, msg={}", request.getMethod(), request.getRequestURI(), e.getMessage(), e);
-        return Result.error("系统异常，请稍后重试");
+        return Result.error(ErrorCode.SYSTEM_ERROR.getCode(), "系统异常，请稍后重试");
     }
 }

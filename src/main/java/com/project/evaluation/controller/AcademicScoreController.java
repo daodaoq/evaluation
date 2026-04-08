@@ -29,14 +29,12 @@ public class AcademicScoreController {
      */
     @GetMapping("/classes")
     @PreAuthorize("hasAuthority('sys:academic:menu')")
-    @CrossOrigin
     public Result<List<ClassOptionVO>> listClassesForAcademic() {
         return Result.success(academicScoreService.listClassOptionsForAcademic());
     }
 
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:academic:menu')")
-    @CrossOrigin
     public Result<PageBean<AcademicScore>> list(@RequestParam Integer pageNum,
                                                 @RequestParam Integer pageSize,
                                                 @RequestParam(required = false) List<Long> periodIds,
@@ -50,7 +48,6 @@ public class AcademicScoreController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('sys:academic:menu')")
-    @CrossOrigin
     public Result<?> add(@RequestBody AddAcademicScoreReq req) {
         academicScoreService.add(req);
         return Result.success();
@@ -58,7 +55,6 @@ public class AcademicScoreController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:academic:menu')")
-    @CrossOrigin
     public Result<?> update(@PathVariable Long id, @RequestBody UpdateAcademicScoreReq req) {
         academicScoreService.update(id, req);
         return Result.success();
@@ -66,7 +62,6 @@ public class AcademicScoreController {
 
     @DeleteMapping
     @PreAuthorize("hasAuthority('sys:academic:menu')")
-    @CrossOrigin
     public Result<?> delete(@RequestBody DeleteAcademicScoreReq req) {
         academicScoreService.delete(req.getId());
         return Result.success();
@@ -74,7 +69,6 @@ public class AcademicScoreController {
 
     @PostMapping("/import-excel")
     @PreAuthorize("hasAuthority('sys:academic:menu')")
-    @CrossOrigin
     public Result<?> importExcel(@RequestParam Long periodId, @RequestParam("file") MultipartFile file) {
         int cnt = academicScoreService.importExcel(periodId, file);
         return Result.success("导入成功，共 " + cnt + " 条");
@@ -82,7 +76,6 @@ public class AcademicScoreController {
 
     @GetMapping("/my")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<MyAcademicScoreVO> my(@RequestParam Long periodId) {
         return Result.success(academicScoreService.getMyScore(periodId));
     }

@@ -1,6 +1,8 @@
 package com.project.evaluation.controller;
 
 import com.project.evaluation.entity.Result;
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.vo.RuleKnowledge.RuleKnowledgeChatReq;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
@@ -20,25 +22,22 @@ import java.util.Map;
 @Profile("!ai")
 public class StudentRuleKnowledgeDisabledController {
 
+    private static final String AI_DISABLED_MSG =
+            "细则问答未启用：请在 evaluation 目录的 .env 中设置 SPRING_PROFILES_ACTIVE=default,ai，"
+                    + "并配置 AI_API_KEY、启动 Chroma 后重启后端。";
+
     @PostMapping("/chat")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<Map<String, String>> chat(@RequestBody(required = false) RuleKnowledgeChatReq req) {
-        return Result.error(
-                "细则问答未启用：请在 evaluation 目录的 .env 中设置 SPRING_PROFILES_ACTIVE=default,ai，"
-                        + "并配置 AI_API_KEY、启动 Chroma 后重启后端。");
+        throw new BizException(ErrorCode.BIZ_CONFLICT, AI_DISABLED_MSG);
     }
 
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public SseEmitter chatStream(@RequestBody(required = false) RuleKnowledgeChatReq req) {
         SseEmitter emitter = new SseEmitter(30_000L);
-        String msg =
-                "细则问答未启用：请在 evaluation 目录的 .env 中设置 SPRING_PROFILES_ACTIVE=default,ai，"
-                        + "并配置 AI_API_KEY、启动 Chroma 后重启后端。";
         try {
-            emitter.send(SseEmitter.event().name("error").data(msg, MediaType.TEXT_PLAIN));
+            emitter.send(SseEmitter.event().name("error").data(AI_DISABLED_MSG, MediaType.TEXT_PLAIN));
             emitter.complete();
         } catch (IOException e) {
             emitter.completeWithError(e);

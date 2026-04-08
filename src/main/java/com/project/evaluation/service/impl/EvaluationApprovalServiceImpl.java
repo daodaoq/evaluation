@@ -1,12 +1,17 @@
 package com.project.evaluation.service.impl;
 
+import com.alibaba.fastjson2.JSONObject;
 import com.github.pagehelper.Page;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.mapper.EvaluationApprovalMapper;
 import com.project.evaluation.service.EvaluationApprovalService;
-import com.project.evaluation.service.PeriodWorkflowService;
+import com.project.evaluation.service.PeriodEventLogService;
+import com.project.evaluation.service.approval.action.ApplyItemActionHandlerFactory;
+import com.project.evaluation.service.approval.audit.ApplyItemAuditAction;
+import com.project.evaluation.service.approval.audit.ApplyItemAuditCheck;
+import com.project.evaluation.service.approval.audit.ApplyItemAuditContext;
 import com.project.evaluation.utils.ApplyItemScoreUtil;
 import com.project.evaluation.utils.MinioUtil;
 import com.project.evaluation.utils.SecurityContextUtil;
@@ -36,10 +41,16 @@ public class EvaluationApprovalServiceImpl implements EvaluationApprovalService 
     private EvaluationApprovalMapper evaluationApprovalMapper;
 
     @Autowired
-    private PeriodWorkflowService periodWorkflowService;
+    private MinioUtil minioUtil;
 
     @Autowired
-    private MinioUtil minioUtil;
+    private List<ApplyItemAuditCheck> applyItemAuditChecks;
+
+    @Autowired
+    private ApplyItemActionHandlerFactory applyItemActionHandlerFactory;
+
+    @Autowired
+    private PeriodEventLogService periodEventLogService;
 
     @Override
     public PageBean<EvaluationApplyItemVO> pageApplyItems(Integer pageNum, Integer pageSize,
@@ -144,64 +155,21 @@ public class EvaluationApprovalServiceImpl implements EvaluationApprovalService 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void approveApplyItem(Long applyItemId, String remark) {
-        if (applyItemId == null || applyItemId <= 0) {
-            throw new IllegalArgumentException("非法申报项ID");
-        }
-        Long periodId = evaluationApprovalMapper.findPeriodIdByApplyItemId(applyItemId);
-        if (periodId != null) {
-            periodWorkflowService.assertTeacherCanAudit(periodId);
-        }
-        ApplyItemScoringSnapshot snap = evaluationApprovalMapper.selectScoringSnapshot(applyItemId);
-        BigDecimal persisted =
-                snap != null && snap.getPersistedScore() != null ? snap.getPersistedScore() : BigDecimal.ZERO;
-        BigDecimal score = ApplyItemScoreUtil.effectiveScore(
-                persisted,
-                snap != null ? snap.getSourceType() : null,
-                snap != null ? snap.getBaseScore() : null,
-                snap != null ? snap.getCoeff() : null,
-                snap != null ? snap.getScoreMode() : null);
-        int affected = evaluationApprovalMapper.updateApplyItemStatusAndScore(applyItemId, "APPROVED", score);
-        if (affected == 0) {
-            throw new IllegalArgumentException("申报项不存在");
-        }
-        Integer auditorId = SecurityContextUtil.getCurrentUserId();
-        evaluationApprovalMapper.insertAuditRecord(applyItemId, auditorId.longValue(), "PASS", remark);
+        executeAction(applyItemId, remark, ApplyItemAuditAction.APPROVE);
         refreshApplyStatus(applyItemId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void rejectApplyItem(Long applyItemId, String remark) {
-        if (applyItemId == null || applyItemId <= 0) {
-            throw new IllegalArgumentException("非法申报项ID");
-        }
-        Long periodId = evaluationApprovalMapper.findPeriodIdByApplyItemId(applyItemId);
-        if (periodId != null) {
-            periodWorkflowService.assertTeacherCanAudit(periodId);
-        }
-        int affected = evaluationApprovalMapper.updateApplyItemStatus(applyItemId, "REJECTED");
-        if (affected == 0) {
-            throw new IllegalArgumentException("申报项不存在");
-        }
-        Integer auditorId = SecurityContextUtil.getCurrentUserId();
-        evaluationApprovalMapper.insertAuditRecord(applyItemId, auditorId.longValue(), "REJECT", remark);
+        executeAction(applyItemId, remark, ApplyItemAuditAction.REJECT);
         refreshApplyStatus(applyItemId);
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void reopenApplyItem(Long applyItemId) {
-        if (applyItemId == null || applyItemId <= 0) {
-            throw new IllegalArgumentException("非法申报项ID");
-        }
-        Long periodId = evaluationApprovalMapper.findPeriodIdByApplyItemId(applyItemId);
-        if (periodId != null) {
-            periodWorkflowService.assertNotArchivedOnly(periodId);
-        }
-        int affected = evaluationApprovalMapper.updateApplyItemStatus(applyItemId, "PENDING");
-        if (affected == 0) {
-            throw new IllegalArgumentException("申报项不存在");
-        }
+        executeAction(applyItemId, null, ApplyItemAuditAction.REOPEN);
         refreshApplyStatus(applyItemId);
     }
 
@@ -225,5 +193,47 @@ public class EvaluationApprovalServiceImpl implements EvaluationApprovalService 
         } else {
             evaluationApprovalMapper.updateApplyStatus(applyId, "SUBMITTED");
         }
+    }
+
+    private ApplyItemAuditContext runAuditChecks(Long applyItemId, ApplyItemAuditAction action) {
+        ApplyItemAuditContext context = new ApplyItemAuditContext();
+        context.setApplyItemId(applyItemId);
+        context.setAction(action);
+        for (ApplyItemAuditCheck check : applyItemAuditChecks) {
+            check.check(context);
+        }
+        return context;
+    }
+
+    private void executeAction(Long applyItemId, String remark, ApplyItemAuditAction action) {
+        ApplyItemAuditContext context = runAuditChecks(applyItemId, action);
+        String beforeStatus = context.getItemStatus();
+        applyItemActionHandlerFactory.get(action).handle(applyItemId, remark);
+        String afterStatus = evaluationApprovalMapper.findApplyItemStatusById(applyItemId);
+        logApprovalAction(context, beforeStatus, afterStatus, remark);
+    }
+
+    private void logApprovalAction(
+            ApplyItemAuditContext context, String beforeStatus, String afterStatus, String remark) {
+        Long periodId = context.getPeriodId();
+        if (periodId == null) {
+            return;
+        }
+        Integer operatorUserId;
+        try {
+            operatorUserId = SecurityContextUtil.getCurrentUserId();
+        } catch (Exception e) {
+            operatorUserId = null;
+        }
+        JSONObject detail = new JSONObject();
+        detail.put("eventType", "APPROVAL_ACTION");
+        detail.put("action", context.getAction() == null ? null : context.getAction().name());
+        detail.put("applyItemId", context.getApplyItemId());
+        detail.put("periodId", periodId);
+        detail.put("operatorUserId", operatorUserId);
+        detail.put("beforeStatus", beforeStatus);
+        detail.put("afterStatus", afterStatus);
+        detail.put("remark", remark);
+        periodEventLogService.log(periodId, "APPROVAL_ACTION", detail.toJSONString());
     }
 }

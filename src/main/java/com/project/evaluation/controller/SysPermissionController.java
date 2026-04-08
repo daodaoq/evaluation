@@ -30,7 +30,6 @@ public class SysPermissionController {
      * 当前登录用户在角色下拥有的权限行（扁平，含 parent_id），供侧栏与动态路由。
      */
     @GetMapping("/my")
-    @CrossOrigin
     public Result<List<SysPermission>> getMyPermissions() {
         return userService.getUserPermissions();
     }
@@ -40,7 +39,6 @@ public class SysPermissionController {
      */
     @GetMapping("/full")
     @PreAuthorize("hasAuthority('sys:perm:menu')")
-    @CrossOrigin
     public Result<List<SysPermission>> listFullMenu() {
         return Result.success(sysPermissionService.listAllEnabled());
     }
@@ -50,7 +48,6 @@ public class SysPermissionController {
      */
     @GetMapping("/menus")
     @PreAuthorize("hasAnyAuthority('sys:role:menu','sys:perm:menu')")
-    @CrossOrigin
     public Result<List<SysPermission>> listMenusForAssign() {
         return Result.success(sysPermissionService.listMenuEnabled());
     }

@@ -1,6 +1,10 @@
 package com.project.evaluation.vo.RuleCategory;
 
 import lombok.Data;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
@@ -18,11 +22,15 @@ public class AddRuleCategoryReq {
     /**
      * 规则总览 id
      */
+    @NotNull(message = "规则ID不能为空")
+    @Positive(message = "规则ID必须为正数")
     private Integer ruleId;
 
     /**
      * 分类名
      */
+    @NotBlank(message = "分类名称不能为空")
+    @Size(max = 64, message = "分类名称长度不能超过64")
     private String categoryName;
 
     /**

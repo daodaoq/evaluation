@@ -5,6 +5,7 @@ import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.RuleCategory;
 import com.project.evaluation.service.EvaluationSubmitTipService;
 import com.project.evaluation.vo.SubmitTip.SubmitTipSaveReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,14 +22,12 @@ public class EvaluationSubmitTipController {
 
     @GetMapping("/categories")
     @PreAuthorize("hasAnyAuthority('sys:period:flow:menu','sys:objection:menu','sys:submit-tip:menu')")
-    @CrossOrigin
     public Result<List<RuleCategory>> categories(@RequestParam Long periodId) {
         return Result.success(evaluationSubmitTipService.listCategoriesForTipManage(periodId));
     }
 
     @GetMapping("/list")
     @PreAuthorize("hasAnyAuthority('sys:period:flow:menu','sys:objection:menu','sys:submit-tip:menu')")
-    @CrossOrigin
     public Result<List<EvaluationSubmitTip>> list(@RequestParam(required = false) List<Long> periodIds,
                                                   @RequestParam(required = false) List<String> sectionCodes) {
         List<Long> pids = periodIds == null ? Collections.emptyList() : periodIds;
@@ -38,23 +37,20 @@ public class EvaluationSubmitTipController {
 
     @PostMapping
     @PreAuthorize("hasAnyAuthority('sys:period:flow:menu','sys:objection:menu','sys:submit-tip:menu')")
-    @CrossOrigin
-    public Result<?> add(@RequestBody SubmitTipSaveReq req) {
+    public Result<?> add(@Valid @RequestBody SubmitTipSaveReq req) {
         evaluationSubmitTipService.add(req);
         return Result.success();
     }
 
     @PutMapping
     @PreAuthorize("hasAnyAuthority('sys:period:flow:menu','sys:objection:menu','sys:submit-tip:menu')")
-    @CrossOrigin
-    public Result<?> update(@RequestBody SubmitTipSaveReq req) {
+    public Result<?> update(@Valid @RequestBody SubmitTipSaveReq req) {
         evaluationSubmitTipService.update(req);
         return Result.success();
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('sys:period:flow:menu','sys:objection:menu','sys:submit-tip:menu')")
-    @CrossOrigin
     public Result<?> delete(@PathVariable Long id) {
         evaluationSubmitTipService.delete(id);
         return Result.success();

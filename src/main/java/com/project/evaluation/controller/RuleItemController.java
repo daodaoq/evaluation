@@ -3,12 +3,15 @@ package com.project.evaluation.controller;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.RuleItem;
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.service.RuleItemService;
 import com.project.evaluation.vo.RuleItem.AddRuleItemReq;
 import com.project.evaluation.vo.RuleItem.CopyRuleItemsReq;
 import com.project.evaluation.vo.RuleItem.DeleteRuleItemReq;
 import com.project.evaluation.vo.RuleItem.RuleCopyPreviewVO;
 import com.project.evaluation.vo.RuleItem.UpdateRuleItemReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,15 +32,13 @@ public class RuleItemController {
      */
     @PostMapping
     @PreAuthorize("hasAuthority('sys:item:menu')")
-    @CrossOrigin
-    public Result addRuleItem(@RequestBody AddRuleItemReq addRuleItemReq){
+    public Result<?> addRuleItem(@Valid @RequestBody AddRuleItemReq addRuleItemReq){
         RuleItem ruleItem = ruleItemService.findRuleItemByName(addRuleItemReq.getItemName());
         if(ruleItem == null) {
             ruleItemService.addRuleItem(addRuleItemReq);
             return Result.success();
-        } else{
-            return Result.error("已有周期");
         }
+        throw new BizException(ErrorCode.BIZ_CONFLICT, "已有周期");
     }
 
     /**
@@ -46,8 +47,7 @@ public class RuleItemController {
      */
     @DeleteMapping
     @PreAuthorize("hasAuthority('sys:item:menu')")
-    @CrossOrigin
-    public Result deleteRuleItem(@RequestBody DeleteRuleItemReq deleteRuleItemReq) throws IllegalAccessException {
+    public Result<?> deleteRuleItem(@Valid @RequestBody DeleteRuleItemReq deleteRuleItemReq) throws IllegalAccessException {
         ruleItemService.deleteRuleItem(deleteRuleItemReq.getId());
         return Result.success();
     }
@@ -59,15 +59,13 @@ public class RuleItemController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:item:menu')")
-    @CrossOrigin
-    public Result updateRuleItem(@RequestBody UpdateRuleItemReq updateRuleItemReq, @PathVariable("id") Integer id) {
+    public Result<?> updateRuleItem(@Valid @RequestBody UpdateRuleItemReq updateRuleItemReq, @PathVariable("id") Integer id) {
         RuleItem ruleItem = ruleItemService.findRuleItemById(id);
         if (ruleItem != null) {
             ruleItemService.updateRuleItem(id, updateRuleItemReq);
             return Result.success();
-        } else {
-            return Result.error("更新的周期不存在");
         }
+        throw new BizException(ErrorCode.RESOURCE_NOT_FOUND, "更新的周期不存在");
     }
 
     /**
@@ -76,7 +74,6 @@ public class RuleItemController {
      */
     @GetMapping
     @PreAuthorize("hasAuthority('sys:item:menu')")
-    @CrossOrigin
     public Result<List<RuleItem>> ruleItemList() {
         List<RuleItem> ruleItems = ruleItemService.ruleItemList();
         return Result.success(ruleItems);
@@ -89,7 +86,6 @@ public class RuleItemController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:item:menu')")
-    @CrossOrigin
     public Result<RuleItem> findRuleItemById(@PathVariable ("id") Integer id){
         RuleItem ruleItem = ruleItemService.findRuleItemById(id);
         return Result.success(ruleItem);
@@ -103,7 +99,6 @@ public class RuleItemController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:item:menu')")
-    @CrossOrigin
     public Result<PageBean<RuleItem>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize
@@ -114,7 +109,6 @@ public class RuleItemController {
 
     @GetMapping("/by-period")
     @PreAuthorize("hasAuthority('sys:item:menu')")
-    @CrossOrigin
     public Result<List<RuleItem>> listByPeriod(
             @RequestParam Integer periodId,
             @RequestParam(required = false) String moduleCode,
@@ -125,15 +119,13 @@ public class RuleItemController {
 
     @PostMapping("/copy-by-period")
     @PreAuthorize("hasAuthority('sys:item:menu')")
-    @CrossOrigin
-    public Result<String> copyByPeriod(@RequestBody CopyRuleItemsReq req) {
+    public Result<String> copyByPeriod(@Valid @RequestBody CopyRuleItemsReq req) {
         int copied = ruleItemService.copyByPeriod(req.getSourcePeriodId(), req.getTargetPeriodId(), req.getOverwrite());
         return Result.success("复制成功，共复制 " + copied + " 条规则项");
     }
 
     @GetMapping("/copy-preview")
     @PreAuthorize("hasAuthority('sys:item:menu')")
-    @CrossOrigin
     public Result<RuleCopyPreviewVO> previewCopyByPeriod(
             @RequestParam Integer sourcePeriodId,
             @RequestParam Integer targetPeriodId

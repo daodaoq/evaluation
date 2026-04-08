@@ -18,7 +18,6 @@ public class DashboardController {
     private DashboardAnalysisService dashboardAnalysisService;
 
     @GetMapping("/analysis")
-    @CrossOrigin
     public Result<DashboardAnalysisVO> analysis(@RequestParam(required = false) Integer periodId) {
         DashboardAnalysisVO vo = dashboardAnalysisService.getDashboardAnalysis(periodId);
         return Result.success(vo);

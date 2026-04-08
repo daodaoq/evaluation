@@ -9,9 +9,18 @@ import com.project.evaluation.vo.User.LoginUserVO;
 import com.project.evaluation.vo.Student.AddStudentReq;
 import com.project.evaluation.vo.Student.DeleteStudentReq;
 import com.project.evaluation.vo.Student.UpdateStudentReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -28,7 +37,6 @@ public class StudentController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<PageBean<LoginUserVO>> list(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
@@ -41,38 +49,23 @@ public class StudentController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
-    public Result<?> add(@RequestBody AddStudentReq req) {
-        try {
-            studentService.addStudent(req);
-            return Result.success();
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            return Result.error(e.getMessage());
-        }
+    public Result<?> add(@Valid @RequestBody AddStudentReq req) {
+        studentService.addStudent(req);
+        return Result.success();
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
-    public Result<?> update(@PathVariable Integer id, @RequestBody UpdateStudentReq req) {
-        try {
-            studentService.updateStudent(id, req);
-            return Result.success();
-        } catch (IllegalArgumentException e) {
-            return Result.error(e.getMessage());
-        }
+    public Result<?> update(@PathVariable Integer id, @Valid @RequestBody UpdateStudentReq req) {
+        studentService.updateStudent(id, req);
+        return Result.success();
     }
 
     @DeleteMapping
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
-    public Result<?> delete(@RequestBody DeleteStudentReq req) {
-        try {
-            studentService.deleteStudent(req.getId());
-            return Result.success();
-        } catch (IllegalArgumentException e) {
-            return Result.error(e.getMessage());
-        }
+    public Result<?> delete(@Valid @RequestBody DeleteStudentReq req) {
+        studentService.deleteStudent(req.getId());
+        return Result.success();
     }
 
     /**
@@ -80,20 +73,14 @@ public class StudentController {
      */
     @PostMapping("/import-excel")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<?> importExcel(@RequestParam("file") MultipartFile file) {
-        try {
-            int cnt = studentService.importStudentsByExcel(file);
-            return Result.success("导入成功，共 " + cnt + " 条");
-        } catch (IllegalArgumentException e) {
-            return Result.error(e.getMessage());
-        }
+        int cnt = studentService.importStudentsByExcel(file);
+        return Result.success("导入成功，共 " + cnt + " 条");
     }
 
     /** 下拉：学院（学生管理页专用，仅需 sys:student:menu） */
     @GetMapping("/colleges")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<List<College>> colleges() {
         return Result.success(studentService.listCollegesForStudentMenu());
     }
@@ -101,7 +88,6 @@ public class StudentController {
     /** 下拉：班级 */
     @GetMapping("/classes")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public Result<List<Class>> classes() {
         return Result.success(studentService.listClassesForStudentMenu());
     }

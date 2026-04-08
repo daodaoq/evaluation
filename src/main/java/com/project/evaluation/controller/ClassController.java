@@ -3,13 +3,24 @@ package com.project.evaluation.controller;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.Class;
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.service.ClassService;
 import com.project.evaluation.vo.Class.AddClassReq;
 import com.project.evaluation.vo.Class.DeleteClassReq;
 import com.project.evaluation.vo.Class.UpdateClassReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -28,15 +39,13 @@ public class ClassController {
      */
     @PostMapping
     @PreAuthorize("hasAuthority('sys:class:menu')")
-    @CrossOrigin
-    public Result addClass(@RequestBody AddClassReq addClassReq) {
+    public Result<?> addClass(@Valid @RequestBody AddClassReq addClassReq) {
         Class clazz = classService.findClassByName(addClassReq.getClassName());
         if (clazz == null) {
             classService.addClass(addClassReq);
             return Result.success();
-        } else {
-            return Result.error("班级已存在");
         }
+        throw new BizException(ErrorCode.BIZ_CONFLICT, "班级已存在");
     }
 
     /**
@@ -47,8 +56,7 @@ public class ClassController {
      */
     @DeleteMapping
     @PreAuthorize("hasAuthority('sys:class:menu')")
-    @CrossOrigin
-    public Result deleteClass(@RequestBody DeleteClassReq deleteClassReq) {
+    public Result<?> deleteClass(@Valid @RequestBody DeleteClassReq deleteClassReq) {
         classService.deleteClass(deleteClassReq.getId());
         return Result.success();
     }
@@ -62,15 +70,13 @@ public class ClassController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:class:menu')")
-    @CrossOrigin
-    public Result updateClass(@RequestBody UpdateClassReq updateClassReq, @PathVariable("id") Integer id) {
+    public Result<?> updateClass(@Valid @RequestBody UpdateClassReq updateClassReq, @PathVariable("id") Integer id) {
         Class clazz = classService.findClassById(id);
         if (clazz != null) {
             classService.updateClass(id, updateClassReq);
             return Result.success();
-        } else {
-            return Result.error("班级不存在");
         }
+        throw new BizException(ErrorCode.RESOURCE_NOT_FOUND, "班级不存在");
     }
 
     /**
@@ -80,7 +86,6 @@ public class ClassController {
      */
     @GetMapping
     @PreAuthorize("hasAuthority('sys:class:menu')")
-    @CrossOrigin
     public Result<List<Class>> classList() {
         List<Class> classes = classService.classList();
         return Result.success(classes);
@@ -94,7 +99,6 @@ public class ClassController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:class:menu')")
-    @CrossOrigin
     public Result<Class> findClassById(@PathVariable("id") Integer id) {
         Class clazz = classService.findClassById(id);
         return Result.success(clazz);
@@ -102,7 +106,6 @@ public class ClassController {
 
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:class:menu')")
-    @CrossOrigin
     public Result<PageBean<Class>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,

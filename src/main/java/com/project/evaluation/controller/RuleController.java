@@ -3,10 +3,13 @@ package com.project.evaluation.controller;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.Rule;
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.service.RuleService;
 import com.project.evaluation.vo.Rule.AddRuleReq;
 import com.project.evaluation.vo.Rule.DeleteRuleReq;
 import com.project.evaluation.vo.Rule.UpdateRuleReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -27,15 +30,13 @@ public class RuleController {
      */
     @PostMapping
     @PreAuthorize("hasAuthority('sys:rule:menu')")
-    @CrossOrigin
-    public Result addRule(@RequestBody AddRuleReq addRuleReq){
+    public Result<?> addRule(@Valid @RequestBody AddRuleReq addRuleReq){
         Rule rule = ruleService.findRuleByName(addRuleReq.getRuleName());
         if(rule == null) {
             ruleService.addRule(addRuleReq);
             return Result.success();
-        } else{
-            return Result.error("已有周期");
         }
+        throw new BizException(ErrorCode.BIZ_CONFLICT, "已有周期");
     }
 
     /**
@@ -44,8 +45,7 @@ public class RuleController {
      */
     @DeleteMapping
     @PreAuthorize("hasAuthority('sys:rule:menu')")
-    @CrossOrigin
-    public Result deleteRule(@RequestBody DeleteRuleReq deleteRuleReq) throws IllegalAccessException {
+    public Result<?> deleteRule(@Valid @RequestBody DeleteRuleReq deleteRuleReq) throws IllegalAccessException {
         ruleService.deleteRule(deleteRuleReq.getId());
         return Result.success();
     }
@@ -57,15 +57,13 @@ public class RuleController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:rule:menu')")
-    @CrossOrigin
-    public Result updateRule(@RequestBody UpdateRuleReq updateRuleReq, @PathVariable("id") Integer id) {
+    public Result<?> updateRule(@Valid @RequestBody UpdateRuleReq updateRuleReq, @PathVariable("id") Integer id) {
         Rule rule = ruleService.findRuleById(id);
         if (rule != null) {
             ruleService.updateRule(id, updateRuleReq);
             return Result.success();
-        } else {
-            return Result.error("更新的周期不存在");
         }
+        throw new BizException(ErrorCode.RESOURCE_NOT_FOUND, "更新的周期不存在");
     }
 
     /**
@@ -74,7 +72,6 @@ public class RuleController {
      */
     @GetMapping
     @PreAuthorize("hasAuthority('sys:rule:menu')")
-    @CrossOrigin
     public Result<List<Rule>> ruleList() {
         List<Rule> rules = ruleService.ruleList();
         return Result.success(rules);
@@ -87,7 +84,6 @@ public class RuleController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:rule:menu')")
-    @CrossOrigin
     public Result<Rule> findRuleById(@PathVariable ("id") Integer id){
         Rule rule = ruleService.findRuleById(id);
         return Result.success(rule);
@@ -103,7 +99,6 @@ public class RuleController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:rule:menu')")
-    @CrossOrigin
     public Result<PageBean<Rule>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,

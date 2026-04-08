@@ -1,6 +1,7 @@
 package com.project.evaluation.config;
 
 import com.project.evaluation.entity.Result;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.filter.JwtAuthenticationFilter;
 import com.project.evaluation.filter.SensitiveWordFilter;
 import com.project.evaluation.utils.ResponseUtil;
@@ -60,10 +61,14 @@ public class SecurityConfiguration {
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> {
                     exception.authenticationEntryPoint((request, response, authException) -> {
-                        ResponseUtil.write(response, Result.error(authException.getMessage()));
+                        ResponseUtil.write(response, Result.error(
+                                ErrorCode.UNAUTHORIZED.getCode(),
+                                ErrorCode.UNAUTHORIZED.getDefaultMessage()));
                     });
                     exception.accessDeniedHandler((request, response, accessDeniedException) -> {
-                        ResponseUtil.write(response, Result.error(accessDeniedException.getMessage()));
+                        ResponseUtil.write(response, Result.error(
+                                ErrorCode.FORBIDDEN.getCode(),
+                                ErrorCode.FORBIDDEN.getDefaultMessage()));
                     });
                 })
                 .addFilterBefore(sensitiveWordFilter, AuthorizationFilter.class)

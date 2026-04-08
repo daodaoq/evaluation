@@ -31,7 +31,6 @@ public class ClassEvaluationScoreController {
 
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:class-score:menu')")
-    @CrossOrigin
     public Result<PageBean<ClassEvaluationScoreRowVO>> list(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
@@ -45,7 +44,6 @@ public class ClassEvaluationScoreController {
 
     @GetMapping("/export")
     @PreAuthorize("hasAuthority('sys:class-score:menu')")
-    @CrossOrigin
     public ResponseEntity<byte[]> export(
             @RequestParam(required = false) List<Long> periodIds,
             @RequestParam(required = false) Long classId,
@@ -63,7 +61,6 @@ public class ClassEvaluationScoreController {
 
     @GetMapping("/unsubmitted/list")
     @PreAuthorize("hasAuthority('sys:class-score:menu')")
-    @CrossOrigin
     public Result<PageBean<ClassUnsubmittedRowVO>> unsubmittedList(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,
@@ -76,7 +73,6 @@ public class ClassEvaluationScoreController {
 
     @GetMapping("/unsubmitted/export")
     @PreAuthorize("hasAuthority('sys:class-score:menu')")
-    @CrossOrigin
     public ResponseEntity<byte[]> exportUnsubmitted(
             @RequestParam(required = false) List<Long> periodIds,
             @RequestParam(required = false) Long classId,

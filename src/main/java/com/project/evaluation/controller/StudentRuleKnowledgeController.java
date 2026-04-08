@@ -3,6 +3,7 @@ package com.project.evaluation.controller;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.service.RuleKnowledgeChatService;
 import com.project.evaluation.vo.RuleKnowledge.RuleKnowledgeChatReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.MediaType;
@@ -28,8 +29,7 @@ public class StudentRuleKnowledgeController {
 
     @PostMapping("/chat")
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
-    public Result<Map<String, String>> chat(@RequestBody RuleKnowledgeChatReq req) {
+    public Result<Map<String, String>> chat(@Valid @RequestBody RuleKnowledgeChatReq req) {
         String answer = ruleKnowledgeChatService.chat(req.getQuestion());
         return Result.success(Map.of("answer", answer));
     }
@@ -39,7 +39,6 @@ public class StudentRuleKnowledgeController {
      */
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @PreAuthorize("hasAuthority('sys:student:menu')")
-    @CrossOrigin
     public SseEmitter chatStream(@RequestBody(required = false) RuleKnowledgeChatReq req) {
         SseEmitter emitter = new SseEmitter(120_000L);
         String question = req != null ? req.getQuestion() : null;

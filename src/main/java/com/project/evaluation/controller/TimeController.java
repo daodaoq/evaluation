@@ -3,13 +3,24 @@ package com.project.evaluation.controller;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.Time;
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.service.TimeService;
 import com.project.evaluation.vo.Time.AddTimeReq;
 import com.project.evaluation.vo.Time.DeleteTimeReq;
 import com.project.evaluation.vo.Time.UpdateTimeReq;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -28,15 +39,13 @@ public class TimeController {
      */
     @PostMapping
     @PreAuthorize("hasAnyAuthority('sys:period:flow:menu','sys:rule:menu')")
-    @CrossOrigin
-    public Result<Integer> addTime(@RequestBody AddTimeReq addTimeReq){
+    public Result<Integer> addTime(@Valid @RequestBody AddTimeReq addTimeReq){
         Time time = timeService.findTimeByName(addTimeReq.getPeriodName());
         if(time == null) {
             timeService.addTime(addTimeReq);
             return Result.success(addTimeReq.getId());
-        } else{
-            return Result.error("已有周期");
         }
+        throw new BizException(ErrorCode.BIZ_CONFLICT, "已有周期");
     }
 
     /**
@@ -45,8 +54,7 @@ public class TimeController {
      */
     @DeleteMapping
     @PreAuthorize("hasAuthority('sys:period:flow:menu')")
-    @CrossOrigin
-    public Result deleteTime(@RequestBody DeleteTimeReq deleteTimeReq) throws IllegalAccessException {
+    public Result<?> deleteTime(@Valid @RequestBody DeleteTimeReq deleteTimeReq) throws IllegalAccessException {
         timeService.deleteTime(deleteTimeReq.getId());
         return Result.success();
     }
@@ -58,15 +66,13 @@ public class TimeController {
      */
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('sys:period:flow:menu')")
-    @CrossOrigin
-    public Result updateTime(@RequestBody UpdateTimeReq updateTimeReq, @PathVariable("id") Integer id) {
+    public Result<?> updateTime(@Valid @RequestBody UpdateTimeReq updateTimeReq, @PathVariable("id") Integer id) {
         Time time = timeService.findTimeById(id);
         if (time != null) {
             timeService.updateTime(id, updateTimeReq);
             return Result.success();
-        } else {
-            return Result.error("更新的周期不存在");
         }
+        throw new BizException(ErrorCode.RESOURCE_NOT_FOUND, "更新的周期不存在");
     }
 
     /**
@@ -99,7 +105,6 @@ public class TimeController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasAuthority('sys:period:flow:menu')")
-    @CrossOrigin
     public Result<PageBean<Time>> paginationQuery(
             @RequestParam Integer pageNum,
             @RequestParam Integer pageSize,

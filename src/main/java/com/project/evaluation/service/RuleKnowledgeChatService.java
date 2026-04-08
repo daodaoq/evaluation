@@ -1,5 +1,7 @@
 package com.project.evaluation.service;
 
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
@@ -32,11 +34,11 @@ public class RuleKnowledgeChatService {
 
     public String chat(String question) {
         if (!StringUtils.hasText(question)) {
-            throw new IllegalArgumentException("请输入问题");
+            throw new BizException(ErrorCode.PARAM_INVALID, "请输入问题");
         }
         String q = question.trim();
         if (q.length() > 4000) {
-            throw new IllegalArgumentException("问题过长，请控制在 4000 字以内");
+            throw new BizException(ErrorCode.PARAM_INVALID, "问题过长，请控制在 4000 字以内");
         }
         return ruleKnowledgeChatClient
                 .prompt()
@@ -48,11 +50,11 @@ public class RuleKnowledgeChatService {
     /** 流式输出模型增量文本（SSE 由 Controller 写出） */
     public Flux<String> chatStream(String question) {
         if (!StringUtils.hasText(question)) {
-            return Flux.error(new IllegalArgumentException("请输入问题"));
+            return Flux.error(new BizException(ErrorCode.PARAM_INVALID, "请输入问题"));
         }
         String q = question.trim();
         if (q.length() > 4000) {
-            return Flux.error(new IllegalArgumentException("问题过长，请控制在 4000 字以内"));
+            return Flux.error(new BizException(ErrorCode.PARAM_INVALID, "问题过长，请控制在 4000 字以内"));
         }
         return ruleKnowledgeChatClient.prompt().user(q).stream().content();
     }

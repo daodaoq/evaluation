@@ -23,7 +23,7 @@ public interface UserService {
     PageBean<LoginUserVO> paginationQueryUsers(Integer pageNum, Integer pageSize, String studentId,
                                                List<Integer> statuses, List<Integer> collegeIds);
 
-    Result logout();
+    Result<?> logout();
 
     Result<List<Authority>> getUserAuthority();
 

@@ -1,6 +1,9 @@
 package com.project.evaluation.vo.Time;
 
 import lombok.Data;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
@@ -17,6 +20,8 @@ public class AddTimeReq {
     /**
      * 周期名称
      */
+    @NotBlank(message = "周期名称不能为空")
+    @Size(max = 64, message = "周期名称长度不能超过64")
     private String periodName;
 
     /**
@@ -32,6 +37,7 @@ public class AddTimeReq {
     /**
      * 状态
      */
+    @NotNull(message = "状态不能为空")
     private Integer status;
 
     private Integer archived;

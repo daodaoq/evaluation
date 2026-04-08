@@ -11,6 +11,8 @@ import com.project.evaluation.entity.MyUserDetails;
 import com.project.evaluation.entity.PageBean;
 import com.project.evaluation.entity.Result;
 import com.project.evaluation.entity.SysPermission;
+import com.project.evaluation.exception.BizException;
+import com.project.evaluation.exception.ErrorCode;
 import com.project.evaluation.mapper.AuthorityMapper;
 import com.project.evaluation.mapper.SysPermissionMapper;
 import com.project.evaluation.mapper.TeacherClassMapper;
@@ -35,7 +37,6 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -108,7 +109,7 @@ public class UserServiceImpl implements UserService {
         try {
             Authentication authentication = authenticationManager.authenticate(authRequest);
             if (!authentication.isAuthenticated()) {
-                return Result.error("登录失败");
+                throw new BizException(ErrorCode.UNAUTHORIZED, "登录失败");
             }
 
             MyUserDetails principal = (MyUserDetails) authentication.getPrincipal();
@@ -118,7 +119,7 @@ public class UserServiceImpl implements UserService {
             boolean hasTeacherRole = userMapper.countUserRole(uid, TEACHER_ROLE_ID) > 0;
             boolean hasAdminRole = userMapper.countUserRole(uid, ADMIN_ROLE_ID) > 0;
             if (!hasStudentRole && !hasTeacherRole && !hasAdminRole) {
-                return Result.error("账号未分配角色，无法登录");
+                throw new BizException(ErrorCode.FORBIDDEN, "账号未分配角色，无法登录");
             }
             String jwtKey = "user:" + myUser.getId();
             String token = JwtUtil.createToken(jwtKey, LOGIN_TOKEN_TTL_MS);
@@ -130,12 +131,14 @@ public class UserServiceImpl implements UserService {
             return Result.success(new LoginResp(token, expireAt, userVo));
         } catch (BadCredentialsException e) {
             log.debug("登录失败：账号或密码错误, user={}", username);
-            return Result.error("账号或密码错误");
+            throw new BizException(ErrorCode.UNAUTHORIZED, "账号或密码错误");
         } catch (DisabledException e) {
-            return Result.error("账号已禁用");
-        } catch (AuthenticationException e) {
+            throw new BizException(ErrorCode.FORBIDDEN, "账号已禁用");
+        } catch (BizException e) {
+            throw e;
+        } catch (Exception e) {
             log.warn("登录认证异常: {}", e.getMessage());
-            return Result.error("登录失败");
+            throw new BizException(ErrorCode.UNAUTHORIZED, "登录失败");
         }
     }
 
@@ -175,7 +178,7 @@ public class UserServiceImpl implements UserService {
      * @return
      */
     @Override
-    public Result logout() {
+    public Result<?> logout() {
         // 清空 redis 信息
         String redisKey = "";
         MyUserDetails userDetails = (MyUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
